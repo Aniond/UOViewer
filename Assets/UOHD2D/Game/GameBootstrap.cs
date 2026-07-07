@@ -12,8 +12,12 @@ namespace UOHD2D.Game
         public string Host = "127.0.0.1";
         public int Port = 2593;
 
-        private string _account = "admin";
-        private string _password = "";
+        // Set these in the Inspector; IMGUI text fields in the Game view are
+        // unreliable for keyboard focus, so the Inspector is the primary path.
+        public string Account = "admin";
+        public string Password = "";
+        public bool AutoConnect = true;
+
         private string _status = "";
 
         private LoginFlow _flow;
@@ -24,6 +28,13 @@ namespace UOHD2D.Game
         private UiPhase _phase = UiPhase.Credentials;
 
         private LoginStage _lastLoggedStage = (LoginStage)(-1);
+        private float _nextDiagAt;
+
+        private void Start()
+        {
+            if (AutoConnect && !string.IsNullOrEmpty(Password))
+                StartLogin();
+        }
 
         private void Update()
         {
@@ -33,6 +44,18 @@ namespace UOHD2D.Game
             {
                 _lastLoggedStage = _flow.Stage;
                 Debug.Log("[UOHD2D] Stage -> " + _flow.Stage + (_flow.Stage == LoginStage.Failed ? " (" + _flow.FailReason + ")" : ""));
+            }
+
+            // Connection-truth heartbeat while the handshake is in flight: BytesSent
+            // is the only witness to whether a packet actually reached the socket,
+            // and ConnError is where UOConnection parks swallowed exceptions.
+            if (_flow != null && _flow.Stage != LoginStage.InWorld && _flow.Stage != LoginStage.Failed && Time.unscaledTime >= _nextDiagAt)
+            {
+                _nextDiagAt = Time.unscaledTime + 1f;
+                Debug.Log("[UOHD2D] diag stage=" + _flow.Stage
+                    + " sent=" + _flow.BytesSent + " recv=" + _flow.BytesReceived
+                    + " connected=" + _flow.ConnConnected
+                    + " err=" + (_flow.ConnError ?? "none"));
             }
         }
 
@@ -44,14 +67,20 @@ namespace UOHD2D.Game
         // Test-only hook so tooling can drive the login flow without clicking OnGUI.
         public void DebugConnect(string account, string password)
         {
-            _account = account;
-            _password = password;
+            Account = account;
+            Password = password;
             StartLogin();
         }
 
         private void StartLogin()
         {
-            _flow = new LoginFlow(Host, Port, _account, _password);
+            // A second Connect (or AutoConnect + click) must not orphan a live
+            // handshake: the old flow's socket would keep the server session open
+            // while its packets are never pumped again.
+            _flow?.Dispose();
+            _phase = UiPhase.Credentials;
+
+            _flow = new LoginFlow(Host, Port, Account, Password);
 
             _flow.OnServerList += servers =>
             {
@@ -84,6 +113,7 @@ namespace UOHD2D.Game
                 SpawnPlayer();
             };
 
+            _flow.UnhandledOpcode += (op, len) => Debug.Log("[UOHD2D] unhandled opcode 0x" + op.ToString("X2") + " len " + len);
             _flow.OnMobileIncoming += HandleMobileIncoming;
             _flow.OnMobileMoving += HandleMobileMoving;
             _flow.OnMobileRemoved += HandleMobileRemoved;
@@ -96,7 +126,7 @@ namespace UOHD2D.Game
 
             _flow.Start();
             _status = "Connecting...";
-            Debug.Log("[UOHD2D] Connecting to " + Host + ":" + Port + " as " + _account);
+            Debug.Log("[UOHD2D] Connecting to " + Host + ":" + Port + " as " + Account);
         }
 
         private void SpawnPlayer()
@@ -161,15 +191,18 @@ namespace UOHD2D.Game
                     GUILayout.Label("Host");
                     Host = GUILayout.TextField(Host);
                     GUILayout.Label("Account");
-                    _account = GUILayout.TextField(_account);
+                    Account = GUILayout.TextField(Account);
                     GUILayout.Label("Password");
-                    _password = GUILayout.PasswordField(_password, '*');
+                    Password = GUILayout.PasswordField(Password, '*');
 
                     if (GUILayout.Button("Connect"))
                         StartLogin();
                     break;
 
                 case UiPhase.ServerList:
+                    if (_flow?.Servers == null)
+                        break; // flow restarted; list not in yet (a null deref here + Error Pause froze whole sessions)
+
                     for (var i = 0; i < _flow.Servers.Length; i++)
                     {
                         var s = _flow.Servers[i];

@@ -6448,6 +6448,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.Game.GameBootstrap
   Host: 127.0.0.1
   Port: 2593
+  Account: admin
+  Password: 1944dave
+  AutoConnect: 1
 --- !u!4 &509520650
 Transform:
   m_ObjectHideFlags: 0
@@ -27484,7 +27487,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673500645}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0, g: 0, b: 0, a: 0}
