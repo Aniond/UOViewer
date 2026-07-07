@@ -31,7 +31,9 @@ namespace UOHD2D.Game
 
         private int _uoX, _uoY, _uoZ;
         private byte _direction;
-        private byte _sequence = 1;
+        // ServUO rejects unless the FIRST request is seq 0 (PacketHandlers.Movement:
+        // "state.Sequence == 0 && seq != 0" -> MovementRej). 0 start, wrap 255 -> 1.
+        private byte _sequence;
         private float _stepTimer;
         private bool _moving;
 
@@ -66,10 +68,33 @@ namespace UOHD2D.Game
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) dx -= 1;
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) dx += 1;
 
-            if (dx == 0 && dy == 0)
+            if (dx != 0 || dy != 0)
+            {
+                TryStep(DeltaToDirection(dx, dy));
                 return;
+            }
 
-            var dir = DeltaToDirection(dx, dy);
+            // Classic-UO mouse walk: hold right button, step toward the cursor.
+            // The follow rig keeps the player centered and the camera yaw is fixed
+            // north, so screen-up is UO north and the octant maps straight onto
+            // the Direction byte (N=0 .. NW=7 clockwise).
+            if (Input.GetMouseButton(1))
+            {
+                var d = (Vector2)Input.mousePosition - new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+                if (d.sqrMagnitude >= 40f * 40f) // dead zone so clicks near the player don't jitter
+                {
+                    var angle = Mathf.Atan2(d.x, d.y) * Mathf.Rad2Deg;
+                    var octant = (byte)((Mathf.RoundToInt(angle / 45f) % 8 + 8) % 8);
+                    TryStep(octant);
+                }
+            }
+        }
+
+        // Tooling hook: lets editor automation exercise a server-validated step
+        // without synthesizing keyboard input.
+        public void DebugStep(byte dir)
+        {
             TryStep(dir);
         }
 
@@ -117,7 +142,7 @@ namespace UOHD2D.Game
             _uoY = y;
             _uoZ = z;
             _direction = dir;
-            _sequence = 1;
+            _sequence = 0; // server reset its Sequence to 0 on reject; it now expects 0 again
 
             var origin = RegionOrigin.Active;
             if (origin != null)

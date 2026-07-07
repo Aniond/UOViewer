@@ -120,6 +120,7 @@ namespace UOHD2D.Game
 
             _flow.OnMovementRejected += (seq, x, y, z, dir) =>
             {
+                Debug.Log("[UOHD2D] movement rejected seq=" + seq + " -> snap to (" + x + "," + y + "," + z + ")");
                 if (_player != null)
                     _player.OnMovementRejected(x, y, z, dir);
             };
