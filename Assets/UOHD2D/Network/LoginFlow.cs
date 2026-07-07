@@ -338,8 +338,28 @@ namespace UOHD2D.Network
             r.ReadByte(); // packet flags (mounted/etc) - not yet modeled client-side
             m.Notoriety = r.ReadByte();
 
-            // Equipment layer entries follow (serial/itemId/layer/[hue]) up to the
-            // terminating zero serial; skipped since we only render a placeholder body.
+            // Equipment list: repeated (serial, itemId, layer, [hue]) until a zero serial.
+            // When itemId's high bit (0x8000) is set, a hue word follows; the id masks it off.
+            m.Equipment = new System.Collections.Generic.List<EquipEntry>();
+
+            while (true)
+            {
+                var serial = (uint)r.ReadInt32();
+                if (serial == 0)
+                    break;
+
+                var itemId = r.ReadUInt16();
+                var layer = r.ReadByte();
+                ushort hue = 0;
+
+                if ((itemId & 0x8000) != 0)
+                {
+                    itemId &= 0x7FFF;
+                    hue = r.ReadUInt16();
+                }
+
+                m.Equipment.Add(new EquipEntry { Serial = serial, ItemId = itemId, Layer = layer, Hue = hue });
+            }
 
             OnMobileIncoming?.Invoke(m);
         }

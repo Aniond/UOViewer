@@ -38,6 +38,15 @@ namespace UOHD2D.Network
         public bool Occupied;
     }
 
+    // One worn item as the server reports it: the UO art graphic, its equipment layer, and hue.
+    public struct EquipEntry
+    {
+        public uint Serial;
+        public ushort ItemId;  // UO graphic id -> mapped to an EquippableItem via the GearCatalog
+        public byte Layer;     // UO equipment layer (see Layer.cs) -> our ArmorSlot
+        public ushort Hue;
+    }
+
     public struct MobileState
     {
         public uint Serial;
@@ -48,5 +57,8 @@ namespace UOHD2D.Network
         public byte Direction;
         public ushort Hue;
         public byte Notoriety;
+
+        // Worn gear parsed from MobileIncoming (null on MobileMoving, which carries no equipment).
+        public System.Collections.Generic.List<EquipEntry> Equipment;
     }
 }

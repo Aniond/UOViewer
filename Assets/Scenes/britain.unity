@@ -6469,6 +6469,7 @@ MonoBehaviour:
   Password: 1944dave
   AutoConnect: 1
   PlayerProfile: {fileID: 11400000, guid: 9013ccbca24fa5842b45d866cb5f1222, type: 2}
+  Gear: {fileID: 11400000, guid: e665c1c3c7abfb545aaaa032201c491d, type: 2}
 --- !u!4 &509520650
 Transform:
   m_ObjectHideFlags: 0
@@ -27505,7 +27506,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673500645}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0, g: 0, b: 0, a: 0}

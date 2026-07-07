@@ -22,6 +22,9 @@ namespace UOHD2D.Game
         // CharacterProfile (e.g. the rigged base_human) to spawn the real character.
         public CharacterProfile PlayerProfile;
 
+        // Maps UO item ids the server reports as worn to our 3D EquippableItems.
+        public GearCatalog Gear;
+
         private string _status = "";
 
         private LoginFlow _flow;
@@ -170,7 +173,12 @@ namespace UOHD2D.Game
         private void HandleMobileIncoming(MobileState state)
         {
             if (_flow.Player.Serial == state.Serial)
-                return; // that's us; LoginConfirm + our own MobileIncoming both describe self
+            {
+                // Our own MobileIncoming carries what WE are wearing - apply it to the player rig.
+                if (_playerRig != null && Gear != null)
+                    _playerRig.ApplyEquipment(state.Equipment, Gear);
+                return;
+            }
 
             if (!_remotes.TryGetValue(state.Serial, out var remote))
             {

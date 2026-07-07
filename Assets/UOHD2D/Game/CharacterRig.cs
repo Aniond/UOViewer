@@ -211,6 +211,48 @@ namespace UOHD2D.Game
             return EquipProp(item.Prefab, item.BoneName, item.Slot, item.LocalOffset, item.LocalEuler, item.Scale);
         }
 
+        // Apply the server's worn-gear list: map each UO item id via the catalog and equip the
+        // 3D piece. Slots present in the server list but not resolvable stay empty; slots the
+        // character had but the server no longer reports are unequipped. Unmapped ids are logged
+        // so it's clear which gear still needs a mesh.
+        public void ApplyEquipment(IEnumerable<Network.EquipEntry> equipment, GearCatalog catalog)
+        {
+            if (catalog == null)
+                return;
+
+            var filled = new HashSet<ArmorSlot>();
+
+            if (equipment != null)
+            {
+                foreach (var e in equipment)
+                {
+                    if (!UOLayer.ToSlot(e.Layer, out var slot))
+                        continue; // a layer we don't render (rings, hair, ...)
+
+                    var item = catalog.Resolve(e.ItemId);
+                    if (item == null)
+                    {
+                        Debug.Log("[UOHD2D] no gear mesh for UO item 0x" + e.ItemId.ToString("X4") + " (layer 0x" + e.Layer.ToString("X2") + ") - slot " + slot + " left empty.");
+                        continue;
+                    }
+
+                    EquipItem(item);
+                    filled.Add(item.Slot);
+                }
+            }
+
+            // Clear any slots the server no longer reports as worn.
+            _clearScratch.Clear();
+            foreach (var slot in _equipped.Keys)
+                if (!filled.Contains(slot))
+                    _clearScratch.Add(slot);
+
+            foreach (var slot in _clearScratch)
+                UnequipArmor(slot);
+        }
+
+        private readonly List<ArmorSlot> _clearScratch = new List<ArmorSlot>();
+
         public void UnequipArmor(ArmorSlot slot)
         {
             if (_equipped.TryGetValue(slot, out var inst) && inst != null)
