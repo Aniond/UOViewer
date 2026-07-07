@@ -1,0 +1,12 @@
+{
+    "asset": "0ae6080e30c47154d930b3a7b032bc90",
+    "fileName": "019f3a3c-aa8b-7d60-9361-407fc69ff433_Preview.jpg",
+    "prompt": "seamless tileable hand-painted meadow grass viewed from directly above, dense fine short blades, muted natural green, soft painterly value variation, top-down game ground texture, even neutral lighting, no flowers, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 401278325,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

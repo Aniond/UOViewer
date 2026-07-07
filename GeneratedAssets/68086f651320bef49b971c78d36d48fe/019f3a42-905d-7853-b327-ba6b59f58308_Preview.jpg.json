@@ -1,0 +1,12 @@
+{
+    "asset": "68086f651320bef49b971c78d36d48fe",
+    "fileName": "019f3a42-905d-7853-b327-ba6b59f58308_Preview.jpg",
+    "prompt": "seamless tileable hand-painted bare earth soil viewed from directly above, muted dark brown with subtle clods and small pebbles, non-directional pattern, soft painterly, top-down game ground texture, even neutral lighting, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 756117255,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

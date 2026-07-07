@@ -6,7 +6,8 @@
       "Read(//c/UnityGames/UO/UO-Export/**)",
       "Read(//c/UnityGames/UO/UO-Export/britain/**)",
       "mcp__unity-mcp__Unity_ReadConsole",
-      "mcp__unity-mcp__Unity_ManageMenuItem"
+      "mcp__unity-mcp__Unity_ManageMenuItem",
+      "mcp__unity-mcp__Unity_AssetGeneration_GenerateAsset"
     ]
   }
 }
