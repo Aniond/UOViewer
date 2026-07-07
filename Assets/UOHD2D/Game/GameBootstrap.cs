@@ -139,12 +139,19 @@ namespace UOHD2D.Game
             var visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             visual.transform.SetParent(go.transform, false);
             visual.transform.localScale = new Vector3(0.4f, 0.5f, 0.4f);
+            visual.transform.localPosition = new Vector3(0f, 0.5f, 0f); // capsule is pivot-centered; sit its base on the feet
             Object.Destroy(visual.GetComponent<Collider>());
 
-            var cam = Camera.main;
-            if (cam != null)
+            var rig = Object.FindAnyObjectByType<UOHD2DCameraRig>();
+            if (rig != null)
             {
-                cam.transform.SetParent(go.transform, true);
+                rig.Follow = go.transform;
+            }
+            else
+            {
+                var cam = Camera.main;
+                if (cam != null)
+                    cam.transform.SetParent(go.transform, true);
             }
         }
 

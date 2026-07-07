@@ -23,6 +23,10 @@ namespace UOHD2D
 		public float PanSpeed = 14f;
 		public float ZoomSpeed = 3f;
 
+		// When set (gameplay), the rig glides after this transform and WASD pan is
+		// disabled - those keys drive the player, which the rig then tracks.
+		public Transform Follow;
+
 		private Camera _camera;
 
 		private void OnEnable()
@@ -48,8 +52,16 @@ namespace UOHD2D
 
 			if (Application.isPlaying)
 			{
-				var move = ReadMove();
-				transform.position += new Vector3(move.x, 0f, move.y) * (PanSpeed * Time.deltaTime * (Distance / 26f));
+				if (Follow != null)
+				{
+					var k = 1f - Mathf.Exp(-10f * Time.deltaTime); // framerate-independent glide
+					transform.position = Vector3.Lerp(transform.position, Follow.position, k);
+				}
+				else
+				{
+					var move = ReadMove();
+					transform.position += new Vector3(move.x, 0f, move.y) * (PanSpeed * Time.deltaTime * (Distance / 26f));
+				}
 
 				Distance = Mathf.Clamp(Distance - ReadZoom() * ZoomSpeed, MinDistance, MaxDistance);
 			}
