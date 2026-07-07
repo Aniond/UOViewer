@@ -34,7 +34,10 @@ namespace UOHD2D
 			var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
 
 			if (mat != null)
+			{
+				ApplyKitDefaults(mat);
 				return mat;
+			}
 
 			EnsureFolder();
 
@@ -47,11 +50,20 @@ namespace UOHD2D
 				color = Color.magenta;
 
 			mat.SetColor("_BaseColor", color);
-			mat.SetFloat("_Smoothness", 0f);
-			mat.SetFloat("_Metallic", 0f);
+			ApplyKitDefaults(mat);
 
 			AssetDatabase.CreateAsset(mat, path);
 			return mat;
+		}
+
+		// Kit shells are hollow and seen from every angle; double-sided rendering
+		// also makes any face-winding slip a cosmetic issue instead of a hole.
+		private static void ApplyKitDefaults(Material mat)
+		{
+			mat.SetFloat("_Smoothness", 0f);
+			mat.SetFloat("_Metallic", 0f);
+			mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
+			mat.doubleSidedGI = true;
 		}
 
 		private static void EnsureFolder()

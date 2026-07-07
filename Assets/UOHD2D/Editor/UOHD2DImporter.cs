@@ -615,29 +615,39 @@ namespace UOHD2D
 					else points.Add(r);
 				}
 
-				// Gable rule: stacked walls under a roof in the same cell merge
-				// into one slab reaching the roof's top.
-				if (roofs.Count > 0 && walls.Count > 0)
+				// Gable fills stack at +3z offsets between stories (z = base+43,
+				// 46, 49...), unlike story walls which sit on 20-multiples. Story
+				// walls render normally; each cell's gable stack merges into one
+				// slab reaching the roof wedge top.
+				var cellCluster = clusterOf[cellPair.Key];
+				var cellBase = clusterBase.ContainsKey(cellCluster) ? clusterBase[cellCluster] : 0;
+				KitInstance minGable = null;
+				var maxGableZ = int.MinValue;
+
+				foreach (var w in walls)
 				{
-					var minWall = walls[0];
+					if ((w.Z - cellBase) % 20 == 0)
+					{
+						Emit(buffers, kitRegion, clusterOf, clusterBase, w, UOHD2DKitMeshBuilder.StoryHeight);
+						continue;
+					}
 
-					foreach (var w in walls)
-						if (w.Z < minWall.Z)
-							minWall = w;
+					if (minGable == null || w.Z < minGable.Z)
+						minGable = w;
 
-					var roofTop = int.MinValue;
+					if (w.Z > maxGableZ)
+						maxGableZ = w.Z;
+				}
+
+				if (minGable != null)
+				{
+					var top = maxGableZ + 3;
 
 					foreach (var rf in roofs)
-						if (rf.Z > roofTop)
-							roofTop = rf.Z;
+						if (rf.Z + 3 > top)
+							top = rf.Z + 3;
 
-					var height = (roofTop + 3 - minWall.Z) * ZScale;
-					Emit(buffers, kitRegion, clusterOf, clusterBase, minWall, height);
-				}
-				else
-				{
-					foreach (var w in walls)
-						Emit(buffers, kitRegion, clusterOf, clusterBase, w, UOHD2DKitMeshBuilder.StoryHeight);
+					Emit(buffers, kitRegion, clusterOf, clusterBase, minGable, (top - minGable.Z) * ZScale);
 				}
 
 				foreach (var p in points)

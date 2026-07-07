@@ -1,0 +1,12 @@
+{
+    "asset": "41ed4c572bef17042a070e5910cc1b38",
+    "fileName": "019f3a8d-0a06-7d51-9feb-4d14f767a4dc_Preview.jpg",
+    "prompt": "seamless tileable hand-painted wooden shingle roof, overlapping brown cedar shakes in staggered rows, stylized fantasy, even neutral lighting, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 1073116610,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

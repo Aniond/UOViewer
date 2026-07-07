@@ -1,0 +1,12 @@
+{
+    "asset": "c57bc1d22d747704892f51cae82d3ea9",
+    "fileName": "019f3a8c-b79d-7cb0-b7cd-9354c0f96cf2_Preview.jpg",
+    "prompt": "seamless tileable hand-painted red brick wall, weathered medieval bricks with pale mortar, stylized fantasy, even neutral lighting, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 1042752769,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

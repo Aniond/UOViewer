@@ -1,0 +1,12 @@
+{
+    "asset": "1723db7fca996364bb311d9264e49b70",
+    "fileName": "019f3a86-7e4a-7d1b-946c-3634922c205f_Preview.jpg",
+    "prompt": "seamless tileable hand-painted weathered oak timber plank wall, vertical boards with visible grain and knots, warm brown, stylized fantasy, even neutral lighting, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 1345301624,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

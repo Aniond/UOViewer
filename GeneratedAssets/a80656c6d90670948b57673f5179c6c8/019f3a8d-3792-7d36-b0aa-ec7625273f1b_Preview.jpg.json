@@ -1,0 +1,12 @@
+{
+    "asset": "a80656c6d90670948b57673f5179c6c8",
+    "fileName": "019f3a8d-3792-7d36-b0aa-ec7625273f1b_Preview.jpg",
+    "prompt": "seamless tileable hand-painted blue-grey slate roof, flat stone tiles in overlapping rows, stylized fantasy, even neutral lighting, no shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 174292958,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

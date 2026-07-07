@@ -31,6 +31,7 @@ namespace UOHD2D
 		public const float RoofStep = 3f * (4f / 44f);     // 0.2727
 		public const float WallThickness = 0.2f;
 		public const float RoofThickness = 0.12f;
+		public const float FoundationDepth = 0.5f; // walls reach below their base z to meet sloping platforms
 
 		private static readonly Dictionary<string, KitPieceGeom> Cache = new Dictionary<string, KitPieceGeom>();
 
@@ -53,26 +54,28 @@ namespace UOHD2D
 			var g = new KitPieceGeom();
 			var t = WallThickness;
 
+			var f = -FoundationDepth;
+
 			switch (piece)
 			{
 				case "wall":
-					AddBox(g, new Vector3(0f, 0f, -t * 0.5f), new Vector3(1f, h, t * 0.5f));
+					AddBox(g, new Vector3(0f, f, -t * 0.5f), new Vector3(1f, h, t * 0.5f));
 					break;
 
 				case "window":
 					// Wall slab with a 0.4x0.7 opening: jambs, sill, lintel.
-					AddBox(g, new Vector3(0f, 0f, -t * 0.5f), new Vector3(0.3f, h, t * 0.5f));
-					AddBox(g, new Vector3(0.7f, 0f, -t * 0.5f), new Vector3(1f, h, t * 0.5f));
-					AddBox(g, new Vector3(0.3f, 0f, -t * 0.5f), new Vector3(0.7f, 0.8f, t * 0.5f));
+					AddBox(g, new Vector3(0f, f, -t * 0.5f), new Vector3(0.3f, h, t * 0.5f));
+					AddBox(g, new Vector3(0.7f, f, -t * 0.5f), new Vector3(1f, h, t * 0.5f));
+					AddBox(g, new Vector3(0.3f, f, -t * 0.5f), new Vector3(0.7f, 0.8f, t * 0.5f));
 					AddBox(g, new Vector3(0.3f, 1.5f, -t * 0.5f), new Vector3(0.7f, h, t * 0.5f));
 					break;
 
 				case "post":
-					AddBox(g, new Vector3(-0.1f, 0f, -0.1f), new Vector3(0.1f, h, 0.1f));
+					AddBox(g, new Vector3(-0.1f, f, -0.1f), new Vector3(0.1f, h, 0.1f));
 					break;
 
 				case "corner":
-					AddBox(g, new Vector3(-0.12f, 0f, -0.12f), new Vector3(0.12f, h, 0.12f));
+					AddBox(g, new Vector3(-0.12f, f, -0.12f), new Vector3(0.12f, h, 0.12f));
 					break;
 
 				case "flat":
