@@ -294,7 +294,7 @@ namespace UOHD2D
 		// While the kit is being proven one building at a time, only statics
 		// inside this tile rect convert to 3D kit pieces; everything else stays
 		// sprites. Widen (or disable) as families pass the capture verify loop.
-		private static readonly bool KitBoundsEnabled = true;
+		private static readonly bool KitBoundsEnabled = false; // city-wide: all 9 families verified on the test house
 		private static readonly RectInt KitBounds = new RectInt(60, 100, 26, 22); // test house x67-80, y107-116 + margin
 
 		private class KitInstance
