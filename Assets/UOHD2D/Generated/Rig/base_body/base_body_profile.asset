@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dec3f625ad9c8b645b7c1f257702f2c8, type: 3}
+  m_Name: base_body_profile
+  m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.Game.CharacterProfile
+  RigPrefab: {fileID: 919132149155446097, guid: be02cff990d49e8448e1a35f1c22261a, type: 3}
+  Controller: {fileID: 9100000, guid: 6826f7b4e952c1841b42d28611f7d187, type: 2}
+  TargetHeight: 1.8
+  GroundOffset: 0.02

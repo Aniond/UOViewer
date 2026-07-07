@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dec3f625ad9c8b645b7c1f257702f2c8, type: 3}
+  m_Name: base_human_profile
+  m_EditorClassIdentifier: 
+  RigPrefab: {fileID: 5864494794200264285, guid: b6e3b9ed2c20b134b8ab5b899bb806ec, type: 3}
+  Controller: {fileID: 9100000, guid: d0423c53141f3654b803715e92118145, type: 2}
+  TargetHeight: 1.8
+  GroundOffset: 0.06

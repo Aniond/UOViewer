@@ -3157,6 +3157,7 @@ MonoBehaviour:
   MaxDistance: 80
   PanSpeed: 14
   ZoomSpeed: 3
+  Follow: {fileID: 0}
 --- !u!4 &244062939
 Transform:
   m_ObjectHideFlags: 0
@@ -4836,6 +4837,7 @@ GameObject:
   - component: {fileID: 408965033}
   - component: {fileID: 408965034}
   - component: {fileID: 408965035}
+  - component: {fileID: 408965036}
   m_Layer: 0
   m_Name: UO Camera
   m_TagString: Untagged
@@ -4953,6 +4955,21 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &408965036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 408965032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a6263cd329e7cf4cb49f6abafeb7b50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.UOHD2DPixelizer
+  PixelScale: 3
+  CharacterLayerName: Character
+  CompositeMaterial: {fileID: 2100000, guid: 248a0373a0d513c4da912d9a153ac07e, type: 2}
 --- !u!1 &415662034
 GameObject:
   m_ObjectHideFlags: 0
@@ -5651,7 +5668,7 @@ Transform:
   m_GameObject: {fileID: 469276130}
   serializedVersion: 2
   m_LocalRotation: {x: 0.0000000037252899, y: -0, z: -0.0000000074505797, w: 1}
-  m_LocalPosition: {x: 305.16678, y: 147.33171, z: -60.05281}
+  m_LocalPosition: {x: 141.77266, y: 132.60078, z: -83.245125}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6451,6 +6468,7 @@ MonoBehaviour:
   Account: admin
   Password: 1944dave
   AutoConnect: 1
+  PlayerProfile: {fileID: 11400000, guid: 9013ccbca24fa5842b45d866cb5f1222, type: 2}
 --- !u!4 &509520650
 Transform:
   m_ObjectHideFlags: 0
@@ -26250,7 +26268,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 125.2505, y: 125.2505, z: 125.2505}
+  m_LocalScale: {x: 4.070344, y: 4.070344, z: 4.070344}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1169120014}
@@ -27487,7 +27505,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673500645}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0, g: 0, b: 0, a: 0}
@@ -30430,9 +30448,6 @@ MonoBehaviour:
   totalSystemWeight: 0
   ambienceProfiles:
   - {fileID: 11400000, guid: 41b8b54c926a0cb41927053de608d3c7, type: 2}
-  - {fileID: 11400000, guid: 163ec11415232fd45b172996c6d1d187, type: 2}
-  - {fileID: 11400000, guid: 348442408abf3d24f8491b7a09210670, type: 2}
-  - {fileID: 11400000, guid: 2c0d3541fbea53b4bbf421041ce171c2, type: 2}
   - {fileID: 11400000, guid: d1819263efe1f8543a1468c77ded08a6, type: 2}
   - {fileID: 11400000, guid: 810a327f893a17c429757085e9e781a0, type: 2}
   - {fileID: 11400000, guid: b80e38b0725a06f4abbb72ea9e3a70dc, type: 2}

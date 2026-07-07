@@ -18,10 +18,15 @@ namespace UOHD2D.Game
         public string Password = "";
         public bool AutoConnect = true;
 
+        // The player's visual. Leave null to spawn a primitive stand-in; assign a
+        // CharacterProfile (e.g. the rigged base_human) to spawn the real character.
+        public CharacterProfile PlayerProfile;
+
         private string _status = "";
 
         private LoginFlow _flow;
         private PlayerAvatar _player;
+        private CharacterRig _playerRig;
         private readonly Dictionary<uint, RemoteMobile> _remotes = new Dictionary<uint, RemoteMobile>();
 
         private enum UiPhase { Credentials, ServerList, CharacterList, InWorld }
@@ -39,6 +44,13 @@ namespace UOHD2D.Game
         private void Update()
         {
             _flow?.Pump();
+
+            // Keep the character visual facing + animating per the player's movement state.
+            if (_playerRig != null && _player != null)
+            {
+                _playerRig.SetFacing(_player.CurrentDirection);
+                _playerRig.SetMoving(_player.IsMoving);
+            }
 
             if (_flow != null && _flow.Stage != _lastLoggedStage)
             {
@@ -137,11 +149,10 @@ namespace UOHD2D.Game
             _player.Flow = _flow;
             _player.Spawn(_flow.Player.X, _flow.Player.Y, _flow.Player.Z, _flow.Player.Direction);
 
-            var visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            visual.transform.SetParent(go.transform, false);
-            visual.transform.localScale = new Vector3(0.4f, 0.5f, 0.4f);
-            visual.transform.localPosition = new Vector3(0f, 0.5f, 0f); // capsule is pivot-centered; sit its base on the feet
-            Object.Destroy(visual.GetComponent<Collider>());
+            // The live character visual: the rigged model from PlayerProfile, or a stand-in.
+            _playerRig = CharacterFactory.Create(PlayerProfile, LayerMask.NameToLayer("Character"));
+            _playerRig.transform.SetParent(go.transform, false);
+            _playerRig.SetFacing(_flow.Player.Direction);
 
             var rig = Object.FindAnyObjectByType<UOHD2DCameraRig>();
             if (rig != null)

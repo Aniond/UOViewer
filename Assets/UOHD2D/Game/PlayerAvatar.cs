@@ -29,6 +29,18 @@ namespace UOHD2D.Game
         public LoginFlow Flow;
         public float StepSeconds = 0.4f;
 
+        // Current facing (UO direction byte, running flag masked off) and whether the avatar is
+        // travelling - read by the CharacterRig each frame to face and animate the visual.
+        // IsMoving uses a small grace window past the step cooldown: between consecutive steps
+        // the timer hits zero for a frame, and without the grace that one-frame false would
+        // bounce the animator Walk state back through Idle, restarting the walk cycle every
+        // step (legs looked frozen mid-glide).
+        public byte CurrentDirection => _direction;
+        public bool IsMoving => Time.time - _lastStepAt < StepSeconds + MoveGraceSeconds;
+
+        private const float MoveGraceSeconds = 0.2f;
+        private float _lastStepAt = float.NegativeInfinity;
+
         private int _uoX, _uoY, _uoZ;
         private byte _direction;
         // ServUO rejects unless the FIRST request is seq 0 (PacketHandlers.Movement:
@@ -36,6 +48,12 @@ namespace UOHD2D.Game
         private byte _sequence;
         private float _stepTimer;
         private bool _moving;
+
+        // The logical tile position updates instantly (prediction), but the TRANSFORM glides
+        // toward it at one tile per StepSeconds - teleporting the visual a full tile per step
+        // made the walk animation read as a backstep after every jump.
+        private Vector3 _glideTarget;
+        private bool _hasGlideTarget;
 
         public void Spawn(int uoX, int uoY, int uoZ, byte direction)
         {
@@ -46,13 +64,25 @@ namespace UOHD2D.Game
 
             var origin = RegionOrigin.Active;
             if (origin != null)
+            {
                 transform.position = origin.ToWorld(_uoX, _uoY, _uoZ);
+                _glideTarget = transform.position;
+                _hasGlideTarget = true;
+            }
         }
 
         private void Update()
         {
             if (Flow == null)
                 return;
+
+            // Glide the visual toward the current tile at step speed (~1 tile / StepSeconds,
+            // slightly faster so it lands before the next step is issued).
+            if (_hasGlideTarget && transform.position != _glideTarget)
+            {
+                var speed = 1.15f / Mathf.Max(0.05f, StepSeconds);
+                transform.position = Vector3.MoveTowards(transform.position, _glideTarget, speed * Time.deltaTime);
+            }
 
             if (_stepTimer > 0f)
             {
@@ -126,13 +156,17 @@ namespace UOHD2D.Game
 
             var origin = RegionOrigin.Active;
             if (origin != null)
-                transform.position = origin.ToWorld(_uoX, _uoY, _uoZ);
+            {
+                _glideTarget = origin.ToWorld(_uoX, _uoY, _uoZ);
+                _hasGlideTarget = true;
+            }
 
             Flow.SendMovement((byte)(dir | Running), _sequence);
             _sequence++;
             if (_sequence == 0) _sequence = 1; // ServUO wraps 0 -> resets client seq tracking
 
             _stepTimer = StepSeconds;
+            _lastStepAt = Time.time;
         }
 
         // Server disagreed with our predicted position; snap back to its authoritative state.
@@ -146,7 +180,10 @@ namespace UOHD2D.Game
 
             var origin = RegionOrigin.Active;
             if (origin != null)
-                transform.position = origin.ToWorld(_uoX, _uoY, _uoZ);
+            {
+                transform.position = origin.ToWorld(_uoX, _uoY, _uoZ); // authoritative correction: hard snap
+                _glideTarget = transform.position;
+            }
         }
     }
 }
