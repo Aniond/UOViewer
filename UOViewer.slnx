@@ -1,12 +1,12 @@
 ﻿<Solution>
   <Project Path="sc.stylizedgrass.runtime.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="DistantLands.Cozy.Editor.csproj" />
   <Project Path="DistantLands.Cozy.Runtime.csproj" />
   <Project Path="sc.stylizedwater3.editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="sc.terrain.painter.editor.csproj" />
   <Project Path="sc.vegetationspawner.runtime.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="sc.stylizedwater3.runtime.csproj" />
   <Project Path="sc.stylizedgrass.editor.csproj" />
   <Project Path="sc.terrain.painter.runtime.csproj" />

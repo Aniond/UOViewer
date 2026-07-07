@@ -291,8 +291,22 @@ namespace UOHD2D
 			}
 		}
 
+		// While the kit is being proven one building at a time, only statics
+		// inside this tile rect convert to 3D kit pieces; everything else stays
+		// sprites. Widen (or disable) as families pass the capture verify loop.
+		private static readonly bool KitBoundsEnabled = true;
+		private static readonly RectInt KitBounds = new RectInt(60, 100, 26, 22); // test house x67-80, y107-116 + margin
+
+		private class KitInstance
+		{
+			public UOHD2DKitLibrary.KitEntry Entry;
+			public int X, Y, Z, Hue;
+		}
+
 		private static void BuildStatics(string dir, StaticEntry[] statics, ArtInfo[] artInfos, Transform root, string assetDir)
 		{
+			var kitLibrary = UOHD2DKitLibrary.Load(dir);
+			var kitRecords = new List<KitInstance>();
 			// Load every unique art sprite, then pack them into one big atlas.
 			var infoByKey = new Dictionary<string, ArtInfo>();
 			var texByKey = new Dictionary<string, Texture2D>();
@@ -418,6 +432,15 @@ namespace UOHD2D
 					continue;
 				}
 
+				// Kit-mapped statics become real 3D geometry instead of sprite quads.
+				UOHD2DKitLibrary.KitEntry kitEntry;
+
+				if (kitLibrary.TryGetEntry(s.id, out kitEntry) && (!KitBoundsEnabled || KitBounds.Contains(new Vector2Int(s.x, s.y))))
+				{
+					kitRecords.Add(new KitInstance { Entry = kitEntry, X = s.x, Y = s.y, Z = s.z, Hue = s.hue });
+					continue;
+				}
+
 				var b = verts.Count;
 
 				if (info.flat)
@@ -494,6 +517,249 @@ namespace UOHD2D
 			var renderer = go.AddComponent<MeshRenderer>();
 			renderer.sharedMaterial = mat;
 			renderer.shadowCastingMode = ShadowCastingMode.TwoSided; // thin quads must cast from both faces
+
+			BuildKit(kitRecords, root, assetDir);
+		}
+
+		/*
+		 * Turns recorded kit instances into combined per-family meshes under
+		 * Kit3D/. Buildings are clustered (8-neighbor flood fill) so stories
+		 * can be bucketed per building; cells where stacked gable walls sit
+		 * under a roof merge into a single full-height slab.
+		 */
+		private static void BuildKit(List<KitInstance> records, Transform root, string assetDir)
+		{
+			if (records.Count == 0)
+				return;
+
+			var byCell = new Dictionary<long, List<KitInstance>>();
+
+			foreach (var r in records)
+			{
+				var key = CellKey(r.X, r.Y);
+				List<KitInstance> list;
+
+				if (!byCell.TryGetValue(key, out list))
+					byCell[key] = list = new List<KitInstance>();
+
+				list.Add(r);
+			}
+
+			// Cluster cells into buildings.
+			var clusterOf = new Dictionary<long, int>();
+			var nextCluster = 0;
+
+			foreach (var start in byCell.Keys)
+			{
+				if (clusterOf.ContainsKey(start))
+					continue;
+
+				var queue = new Queue<long>();
+				queue.Enqueue(start);
+				clusterOf[start] = nextCluster;
+
+				while (queue.Count > 0)
+				{
+					var cell = queue.Dequeue();
+					var cx = (int)(cell >> 32);
+					var cy = (int)(uint)(cell & 0xffffffff);
+
+					for (var dx = -1; dx <= 1; dx++)
+						for (var dy = -1; dy <= 1; dy++)
+						{
+							var n = CellKey(cx + dx, cy + dy);
+
+							if (byCell.ContainsKey(n) && !clusterOf.ContainsKey(n))
+							{
+								clusterOf[n] = nextCluster;
+								queue.Enqueue(n);
+							}
+						}
+				}
+
+				nextCluster++;
+			}
+
+			// Per-cluster base z from wall-type pieces.
+			var clusterBase = new Dictionary<int, int>();
+
+			foreach (var r in records)
+			{
+				if (IsRoofPiece(r.Entry.piece))
+					continue;
+
+				var c = clusterOf[CellKey(r.X, r.Y)];
+
+				if (!clusterBase.ContainsKey(c) || r.Z < clusterBase[c])
+					clusterBase[c] = r.Z;
+			}
+
+			// Emit geometry per (family, bucket).
+			var buffers = new Dictionary<string, KitPieceGeom>();
+			var region = new GameObject("Kit3D");
+			region.transform.SetParent(root, false);
+			var kitRegion = region.AddComponent<Game.UOKitRegion>();
+			var hueWarnings = 0;
+
+			foreach (var cellPair in byCell)
+			{
+				var cell = cellPair.Value;
+				var roofs = new List<KitInstance>();
+				var walls = new List<KitInstance>();
+				var points = new List<KitInstance>();
+
+				foreach (var r in cell)
+				{
+					if (IsRoofPiece(r.Entry.piece)) roofs.Add(r);
+					else if (r.Entry.piece == "wall" || r.Entry.piece == "window") walls.Add(r);
+					else points.Add(r);
+				}
+
+				// Gable rule: stacked walls under a roof in the same cell merge
+				// into one slab reaching the roof's top.
+				if (roofs.Count > 0 && walls.Count > 0)
+				{
+					var minWall = walls[0];
+
+					foreach (var w in walls)
+						if (w.Z < minWall.Z)
+							minWall = w;
+
+					var roofTop = int.MinValue;
+
+					foreach (var rf in roofs)
+						if (rf.Z > roofTop)
+							roofTop = rf.Z;
+
+					var height = (roofTop + 3 - minWall.Z) * ZScale;
+					Emit(buffers, kitRegion, clusterOf, clusterBase, minWall, height);
+				}
+				else
+				{
+					foreach (var w in walls)
+						Emit(buffers, kitRegion, clusterOf, clusterBase, w, UOHD2DKitMeshBuilder.StoryHeight);
+				}
+
+				foreach (var p in points)
+					Emit(buffers, kitRegion, clusterOf, clusterBase, p, UOHD2DKitMeshBuilder.StoryHeight);
+
+				foreach (var rf in roofs)
+					Emit(buffers, kitRegion, clusterOf, clusterBase, rf, UOHD2DKitMeshBuilder.StoryHeight);
+
+				foreach (var r in cell)
+					if (r.Hue != 0)
+						hueWarnings++;
+			}
+
+			if (hueWarnings > 0)
+				Debug.LogWarning("[UOHD2D] Kit: " + hueWarnings + " hued statics rendered untinted (hue support pending).");
+
+			// Persist buffers as meshes + renderers.
+			foreach (var kv in buffers)
+			{
+				var parts = kv.Key.Split('|');
+				var family = parts[0];
+				var bucket = parts[1];
+
+				var mesh = new Mesh { name = "kit_" + family + "_" + bucket, indexFormat = IndexFormat.UInt32 };
+				mesh.SetVertices(kv.Value.Verts);
+				mesh.SetNormals(kv.Value.Normals);
+				mesh.SetUVs(0, kv.Value.UVs);
+				mesh.SetTriangles(kv.Value.Tris, 0);
+				mesh.RecalculateBounds();
+				AssetDatabase.CreateAsset(mesh, assetDir + "/kit_" + family + "_" + bucket + ".asset");
+
+				var bucketGo = region.transform.Find(bucket);
+
+				if (bucketGo == null)
+				{
+					var b = new GameObject(bucket);
+					b.transform.SetParent(region.transform, false);
+					bucketGo = b.transform;
+				}
+
+				var go = new GameObject(family);
+				go.transform.SetParent(bucketGo, false);
+				go.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+				var mr = go.AddComponent<MeshRenderer>();
+				mr.sharedMaterial = UOHD2DKitMaterials.EnsureFamilyMaterial(family);
+				mr.shadowCastingMode = ShadowCastingMode.On;
+			}
+
+			Debug.Log("[UOHD2D] Kit pass: " + records.Count + " statics converted into " + buffers.Count + " combined meshes across " + nextCluster + " building clusters.");
+		}
+
+		private static void Emit(Dictionary<string, KitPieceGeom> buffers, Game.UOKitRegion region,
+			Dictionary<long, int> clusterOf, Dictionary<int, int> clusterBase, KitInstance r, float wallHeight)
+		{
+			var isRoof = IsRoofPiece(r.Entry.piece);
+			var cluster = clusterOf[CellKey(r.X, r.Y)];
+			var baseZ = clusterBase.ContainsKey(cluster) ? clusterBase[cluster] : r.Z;
+			var story = isRoof ? -1 : Mathf.Max(0, (r.Z - baseZ) / 20);
+			var bucket = isRoof ? "Roof" : "Story" + story;
+			var bufferKey = r.Entry.family + "|" + bucket;
+
+			KitPieceGeom buffer;
+
+			if (!buffers.TryGetValue(bufferKey, out buffer))
+				buffers[bufferKey] = buffer = new KitPieceGeom();
+
+			var geom = UOHD2DKitMeshBuilder.Get(r.Entry.piece, wallHeight);
+			var rot = Quaternion.Euler(0f, r.Entry.rotY, 0f);
+
+			// Area pieces (roof footprints) need re-anchoring after rotation so
+			// the footprint stays on the tile; edge/point pieces pivot in place.
+			var correction = Vector3.zero;
+
+			if (isRoof)
+			{
+				if (r.Entry.rotY == 90) correction = new Vector3(1f, 0f, 0f);
+				else if (r.Entry.rotY == 180) correction = new Vector3(1f, 0f, -1f);
+				else if (r.Entry.rotY == 270) correction = new Vector3(0f, 0f, -1f);
+			}
+
+			// Roof footprints in the data sit (+1,+1) tiles SE of the walls they
+			// cover; pull them back over the building.
+			var origin = new Vector3(
+				r.X + (isRoof ? -1f : 0f),
+				r.Z * ZScale,
+				-r.Y + (isRoof ? 1f : 0f)) + correction;
+
+			var baseIndex = buffer.Verts.Count;
+
+			for (var i = 0; i < geom.Verts.Count; i++)
+			{
+				buffer.Verts.Add(rot * geom.Verts[i] + origin);
+				buffer.Normals.Add(rot * geom.Normals[i]);
+				buffer.UVs.Add(geom.UVs[i]);
+			}
+
+			foreach (var t in geom.Tris)
+				buffer.Tris.Add(baseIndex + t);
+
+			region.Records.Add(new Game.UOKitRegion.PieceRecord
+			{
+				ArtId = r.Entry.id,
+				Family = r.Entry.family,
+				Piece = r.Entry.piece,
+				RotY = r.Entry.rotY,
+				X = r.X,
+				Y = r.Y,
+				Z = r.Z,
+				Story = story,
+				ClusterId = cluster
+			});
+		}
+
+		private static bool IsRoofPiece(string piece)
+		{
+			return piece == "slope" || piece == "ridge" || piece == "flat" || piece == "corner_out" || piece == "corner_in";
+		}
+
+		private static long CellKey(int x, int y)
+		{
+			return ((long)x << 32) ^ (uint)y;
 		}
 
 		private static T ListFromJson<T>(string path)
