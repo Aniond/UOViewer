@@ -1,0 +1,12 @@
+{
+    "asset": "193859590f1f94546b61863e35f07df5",
+    "fileName": "019f3a26-fd6a-71db-9fc7-409aef8c5635_Preview.jpg",
+    "prompt": "seamless tileable hand-painted dark river bed, deep blue-green silt with scattered pebbles, murky underwater ground, painterly stylized fantasy, even neutral lighting, no baked shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 607592647,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

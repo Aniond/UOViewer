@@ -1,0 +1,31 @@
+{
+    "asset": "ddaef60039b44dc4e97bf9e71027cb19",
+    "fileName": "019f3a27-7d2e-73ee-8bd1-8d99a8fdd536.png",
+    "prompt": "a single small tuft of grass, cluster of painterly green grass blades, hand-painted stylized fantasy game sprite, isolated on plain background, no ground, no shadow",
+    "negativePrompt": "",
+    "model": "stylized-3d",
+    "modelName": "Stylized 3D",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": []
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 512,
+        "height": 512
+    },
+    "spriteSheet": false,
+    "duration": 0.0,
+    "dynamicParams": {
+        "serializedData": []
+    }
+}

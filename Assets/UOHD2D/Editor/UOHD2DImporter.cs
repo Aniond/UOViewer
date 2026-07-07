@@ -230,14 +230,13 @@ namespace UOHD2D
 					mat.SetFloat("_Glossiness", 0f);
 				}
 
-				if (uvTile != 1f)
-					mat.SetTextureScale("_BaseMap", new Vector2(uvTile, uvTile));
-
 				AssetDatabase.CreateAsset(mat, assetDir + "/land_" + texName + ".mat");
 
 				var verts = new List<Vector3>();
 				var uvs = new List<Vector2>();
 				var tris = new List<int>();
+
+				var worldUV = upgrade != null && baseTex != null;
 
 				foreach (var idx in kv.Value)
 				{
@@ -256,10 +255,22 @@ namespace UOHD2D
 					verts.Add(new Vector3(x, z01, -(y + 1)));     // SW
 					verts.Add(new Vector3(x + 1, z11, -(y + 1))); // SE
 
-					uvs.Add(new Vector2(0, 1));
-					uvs.Add(new Vector2(1, 1));
-					uvs.Add(new Vector2(0, 0));
-					uvs.Add(new Vector2(1, 0));
+					if (worldUV)
+					{
+						// Continuous world-space UVs: painterly tileables flow
+						// seamlessly across tiles instead of repeating per tile.
+						uvs.Add(new Vector2(x * uvTile, -y * uvTile));
+						uvs.Add(new Vector2((x + 1) * uvTile, -y * uvTile));
+						uvs.Add(new Vector2(x * uvTile, -(y + 1) * uvTile));
+						uvs.Add(new Vector2((x + 1) * uvTile, -(y + 1) * uvTile));
+					}
+					else
+					{
+						uvs.Add(new Vector2(0, 1));
+						uvs.Add(new Vector2(1, 1));
+						uvs.Add(new Vector2(0, 0));
+						uvs.Add(new Vector2(1, 0));
+					}
 
 					tris.Add(b); tris.Add(b + 1); tris.Add(b + 3);
 					tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);

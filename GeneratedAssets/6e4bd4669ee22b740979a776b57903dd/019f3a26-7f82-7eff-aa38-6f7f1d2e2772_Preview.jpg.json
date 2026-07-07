@@ -1,0 +1,12 @@
+{
+    "asset": "6e4bd4669ee22b740979a776b57903dd",
+    "fileName": "019f3a26-7f82-7eff-aa38-6f7f1d2e2772_Preview.jpg",
+    "prompt": "seamless tileable hand-painted packed dirt path, warm brown earth with small stones and subtle footworn variation, painterly stylized fantasy ground texture, even neutral lighting, no baked shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 2099467920,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

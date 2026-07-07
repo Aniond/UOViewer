@@ -1,0 +1,12 @@
+{
+    "asset": "bc25b1d6f2b8d614d95cd0de786a3377",
+    "fileName": "019f3a25-cc6b-7bb0-81dd-44c12b2e83f0_Preview.jpg",
+    "prompt": "seamless tileable hand-painted meadow grass, slightly darker forest-edge green with tiny clover patches and small wildflowers, painterly stylized fantasy ground texture, even neutral lighting, no baked shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 814260061,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

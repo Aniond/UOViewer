@@ -1,0 +1,12 @@
+{
+    "asset": "c9867792ff902434298341456ff1fec4",
+    "fileName": "019f3a26-104b-705e-81af-2cb6cf4995c3_Preview.jpg",
+    "prompt": "seamless tileable hand-painted grey stone cobblestone pavement, rounded worn medieval town stones, painterly stylized fantasy, cool grey with warm edge highlights, even neutral lighting, no baked shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 745256971,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

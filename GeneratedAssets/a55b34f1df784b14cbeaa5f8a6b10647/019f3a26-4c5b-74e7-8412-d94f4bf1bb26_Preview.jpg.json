@@ -1,0 +1,12 @@
+{
+    "asset": "a55b34f1df784b14cbeaa5f8a6b10647",
+    "fileName": "019f3a26-4c5b-74e7-8412-d94f4bf1bb26_Preview.jpg",
+    "prompt": "seamless tileable hand-painted dark weathered stone paving slabs with moss in the cracks, medieval street, painterly stylized fantasy, even neutral lighting, no baked shadows",
+    "negativePrompt": "",
+    "model": "hand-painted-textures-2-0",
+    "modelName": "Hand Painted Textures 2.0",
+    "customSeed": 48985656,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}
