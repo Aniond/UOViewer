@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 401e3a6b0f3603e43963565308fd9aa9, type: 3}
+  m_Name: template_male
+  m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.Game.BodyTemplate
+  Gender: 0
+  BodyPrefab: {fileID: -8150428798448403706, guid: c1078436414f2d54d8696fe8fed3cf11, type: 3}
+  Avatar: {fileID: 9000000, guid: 75de5f034bb03594986edabc992bde5d, type: 2}
+  Controller: {fileID: 9100000, guid: 6c64e2f7c3f75264d8b445c79d3363d6, type: 2}
+  TargetHeight: 1.8
+  GroundOffset: 0.02

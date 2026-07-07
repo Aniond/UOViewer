@@ -170,6 +170,47 @@ namespace UOHD2D.Game
             return inst;
         }
 
+        // Equip a RIGID prop (helmet, weapon, shield, hat, backpack) by parenting it to a named
+        // body bone so it rides along with the animation. Unlike EquipArmor this needs no shared
+        // skeleton - the piece is any GameObject/mesh. localOffset/localEuler/scale position it on
+        // the bone. Returns the spawned instance, or null if the bone isn't found.
+        public GameObject EquipProp(GameObject piecePrefab, string boneName, ArmorSlot slot,
+            Vector3 localOffset, Vector3 localEuler, float scale = 1f)
+        {
+            if (!_bound)
+                Bind();
+
+            if (piecePrefab == null)
+                return null;
+
+            if (!_boneByName.TryGetValue(boneName, out var bone) || bone == null)
+            {
+                Debug.LogWarning("[UOHD2D] EquipProp: bone '" + boneName + "' not found on " + name + ".");
+                return null;
+            }
+
+            UnequipArmor(slot);
+
+            var inst = Instantiate(piecePrefab, bone);
+            inst.name = piecePrefab.name + "_" + slot;
+            inst.transform.localPosition = localOffset;
+            inst.transform.localRotation = Quaternion.Euler(localEuler);
+            inst.transform.localScale = Vector3.one * scale;
+            SetLayerRecursive(inst, gameObject.layer);
+
+            _equipped[slot] = inst;
+            return inst;
+        }
+
+        // Equip an item from its saved fit definition - the one-call path for the catalog.
+        public GameObject EquipItem(EquippableItem item)
+        {
+            if (item == null || item.Prefab == null)
+                return null;
+
+            return EquipProp(item.Prefab, item.BoneName, item.Slot, item.LocalOffset, item.LocalEuler, item.Scale);
+        }
+
         public void UnequipArmor(ArmorSlot slot)
         {
             if (_equipped.TryGetValue(slot, out var inst) && inst != null)

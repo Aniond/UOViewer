@@ -12,7 +12,7 @@ namespace UOHD2D.Game
         // GameObject (Player / RemoteMobile), whose transform is the tile position.
         public static CharacterRig Create(CharacterProfile profile, int layer)
         {
-            if (profile != null && profile.RigPrefab != null)
+            if (profile != null && profile.ResolvedPrefab != null)
                 return CreateFromPrefab(profile, layer);
 
             return CreateStandIn(layer);
@@ -20,10 +20,11 @@ namespace UOHD2D.Game
 
         private static CharacterRig CreateFromPrefab(CharacterProfile profile, int layer)
         {
-            var go = Object.Instantiate(profile.RigPrefab);
-            go.name = profile.RigPrefab.name;
+            var prefab = profile.ResolvedPrefab;
+            var go = Object.Instantiate(prefab);
+            go.name = prefab.name;
 
-            NormalizeFeetAndScale(go, profile.TargetHeight, profile.GroundOffset);
+            NormalizeFeetAndScale(go, profile.ResolvedHeight, profile.ResolvedGroundOffset);
             SetLayerRecursive(go, layer);
 
             var rig = go.GetComponent<CharacterRig>();
@@ -34,21 +35,38 @@ namespace UOHD2D.Game
             if (smr != null)
                 rig.Body = smr;
 
-            if (profile.Controller != null)
+            // Per-character skin/face texture override (individuals vary by texture on a shared body).
+            if (profile.SkinTexture != null && smr != null && smr.sharedMaterial != null)
+            {
+                var mat = new Material(smr.sharedMaterial);
+                if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", profile.SkinTexture);
+                else if (mat.HasProperty("baseColorTexture")) mat.SetTexture("baseColorTexture", profile.SkinTexture);
+                smr.sharedMaterial = mat;
+            }
+
+            var controller = profile.ResolvedController;
+            if (controller != null)
             {
                 var animator = go.GetComponentInChildren<Animator>();
                 if (animator == null)
                     animator = go.AddComponent<Animator>();
-                animator.runtimeAnimatorController = profile.Controller;
+                animator.runtimeAnimatorController = controller;
                 // GLB models import generic; apply the humanoid avatar so clips retarget.
-                if (profile.Avatar != null)
-                    animator.avatar = profile.Avatar;
+                if (profile.ResolvedAvatar != null)
+                    animator.avatar = profile.ResolvedAvatar;
                 // Tile/network logic drives position; clip travel is extracted as root motion
                 // and must be discarded, else the mesh strides away from its own anchor.
                 animator.applyRootMotion = false;
             }
 
             rig.Bind();
+
+            // Equip default gear (fitted to the template, so it fits automatically).
+            if (profile.DefaultGear != null)
+                foreach (var item in profile.DefaultGear)
+                    if (item != null)
+                        rig.EquipItem(item);
+
             return rig;
         }
 
