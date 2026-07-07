@@ -582,7 +582,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Standalone: SENTIS_ANALYTICS_ENABLED
+    Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY;COZY_WEATHER;COZY_3_AND_UP;COZY_URP
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}
@@ -681,10 +681,10 @@ PlayerSettings:
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: cb40c041-2aca-44fe-a07b-3cd2c5c2dbed
+  cloudProjectId: 64a5c66c-0bb7-4566-8674-c90f820b36bd
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: UOViewer
+  projectName: UOViewer 2026-07-06_15-33-01
   organizationId: unity_6aedbf1142bbc30113f5
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

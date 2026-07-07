@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__unity-mcp__Unity_ManageEditor",
+      "mcp__unity-mcp__Unity_ManageScene",
+      "Read(//c/UnityGames/UO/UO-Export/**)",
+      "Read(//c/UnityGames/UO/UO-Export/britain/**)",
+      "mcp__unity-mcp__Unity_ReadConsole",
+      "mcp__unity-mcp__Unity_ManageMenuItem"
+    ]
+  }
+}

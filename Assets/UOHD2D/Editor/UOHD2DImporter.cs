@@ -28,7 +28,7 @@ namespace UOHD2D
 		[Serializable] private class LandInfoList { public LandInfo[] items; }
 		[Serializable] private class StaticEntry { public int x, y, z, id, hue; }
 		[Serializable] private class StaticList { public StaticEntry[] items; }
-		[Serializable] private class ArtInfo { public string key; public int id, hue, w, h; public string name; }
+		[Serializable] private class ArtInfo { public string key; public int id, hue, w, h; public bool flat; public string name; }
 		[Serializable] private class ArtInfoList { public ArtInfo[] items; }
 
 		[MenuItem("UO HD2D/Import Export Folder...")]
@@ -76,7 +76,18 @@ namespace UOHD2D
 			var assetDir = "Assets/UOHD2D/Imported/" + regionName;
 			EnsureFolder(assetDir);
 
+			// Reimporting replaces the existing region in place instead of duplicating it.
+			var existing = GameObject.Find("UO_" + regionName);
+
+			if (existing != null)
+				UnityEngine.Object.DestroyImmediate(existing);
+
 			var root = new GameObject("UO_" + regionName);
+
+			var origin = root.AddComponent<UOHD2D.Game.RegionOrigin>();
+			origin.Map = manifest.map;
+			origin.X0 = manifest.x0;
+			origin.Y0 = manifest.y0;
 
 			EditorUtility.DisplayProgressBar("UO HD2D", "Building terrain...", 0.1f);
 			BuildTerrain(dir, manifest, landInfos, root.transform, assetDir);
@@ -275,16 +286,32 @@ namespace UOHD2D
 			foreach (var tex in textures)
 				UnityEngine.Object.DestroyImmediate(tex);
 
+			// Statics must receive scene lighting for the HD-2D look. Prefer the
+			// custom sprite-lit graph when it exists, else URP/Lit as alpha-clipped
+			// cutout with specular fully disabled so sprites shade flat like Octopath.
 			Material mat;
-			var urpUnlit = Shader.Find("Universal Render Pipeline/Unlit");
+			var spriteLit = Shader.Find("Shader Graphs/UOHD2D_SpriteLit");
+			var urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
-			if (urpUnlit != null)
+			if (spriteLit != null)
 			{
-				mat = new Material(urpUnlit);
+				mat = new Material(spriteLit);
 				mat.SetTexture("_BaseMap", atlas);
+			}
+			else if (urpLit != null)
+			{
+				mat = new Material(urpLit);
+				mat.SetTexture("_BaseMap", atlas);
+				mat.SetFloat("_Smoothness", 0f);
+				mat.SetFloat("_Metallic", 0f);
 				mat.SetFloat("_AlphaClip", 1f);
 				mat.SetFloat("_Cutoff", 0.5f);
+				mat.SetFloat("_Cull", (float)CullMode.Off);
+				mat.SetFloat("_SpecularHighlights", 0f);
+				mat.SetFloat("_EnvironmentReflections", 0f);
 				mat.EnableKeyword("_ALPHATEST_ON");
+				mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+				mat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
 				mat.renderQueue = (int)RenderQueue.AlphaTest;
 			}
 			else
@@ -300,8 +327,16 @@ namespace UOHD2D
 
 			var verts = new List<Vector3>();
 			var uvs = new List<Vector2>();
+			var normals = new List<Vector3>();
 			var tris = new List<int>();
 			var skipped = 0;
+
+			// Upright sprites get a normal tilted halfway between "facing camera"
+			// and "up" so they shade like scenery instead of going black when the
+			// sun grazes the billboard plane (the Octopath billboard trick).
+			var uprightNormal = new Vector3(0f, 0.7071f, -0.7071f);
+
+			var waterSkipped = 0;
 
 			foreach (var s in statics)
 			{
@@ -315,34 +350,79 @@ namespace UOHD2D
 					continue;
 				}
 
-				var halfW = info.w / PPU * 0.5f;
-				var height = info.h / PPU;
-				var baseY = s.z * ZScale;
-				var cx = s.x + 0.5f;
-				var cz = -(s.y + 0.5f);
+				// Water sprites are not baked: a real water surface (Stylized Water 3)
+				// is placed at sea level instead and reads far better in HD-2D.
+				if (info.name == "water")
+				{
+					waterSkipped++;
+					continue;
+				}
 
 				var b = verts.Count;
 
-				verts.Add(new Vector3(cx - halfW, baseY, cz));          // bottom-left
-				verts.Add(new Vector3(cx + halfW, baseY, cz));          // bottom-right
-				verts.Add(new Vector3(cx - halfW, baseY + height, cz)); // top-left
-				verts.Add(new Vector3(cx + halfW, baseY + height, cz)); // top-right
+				if (info.flat)
+				{
+					// Wet tiles (water) lie flat on the tile square like land. The art is a
+					// 44x44 diamond, so the tile's corners map to the diamond's vertices:
+					// the quad samples the inscribed diamond of the sprite rect.
+					var yFlat = s.z * ZScale + 0.02f; // sit just above the terrain
 
-				uvs.Add(new Vector2(r.xMin, r.yMin));
-				uvs.Add(new Vector2(r.xMax, r.yMin));
-				uvs.Add(new Vector2(r.xMin, r.yMax));
-				uvs.Add(new Vector2(r.xMax, r.yMax));
+					verts.Add(new Vector3(s.x, yFlat, -s.y));
+					verts.Add(new Vector3(s.x + 1, yFlat, -s.y));
+					verts.Add(new Vector3(s.x, yFlat, -(s.y + 1)));
+					verts.Add(new Vector3(s.x + 1, yFlat, -(s.y + 1)));
 
-				tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
-				tris.Add(b + 1); tris.Add(b + 2); tris.Add(b + 3);
+					uvs.Add(new Vector2(r.xMin + 0.5f * r.width, r.yMax));  // (x,   y)   -> diamond top
+					uvs.Add(new Vector2(r.xMax, r.yMin + 0.5f * r.height)); // (x+1, y)   -> diamond right
+					uvs.Add(new Vector2(r.xMin, r.yMin + 0.5f * r.height)); // (x,   y+1) -> diamond left
+					uvs.Add(new Vector2(r.xMin + 0.5f * r.width, r.yMin));  // (x+1, y+1) -> diamond bottom
+
+					normals.Add(Vector3.up);
+					normals.Add(Vector3.up);
+					normals.Add(Vector3.up);
+					normals.Add(Vector3.up);
+
+					tris.Add(b); tris.Add(b + 1); tris.Add(b + 3);
+					tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
+				}
+				else
+				{
+					var halfW = info.w / PPU * 0.5f;
+					var height = info.h / PPU;
+					var baseY = s.z * ZScale;
+					var cx = s.x + 0.5f;
+					var cz = -(s.y + 0.5f);
+
+					verts.Add(new Vector3(cx - halfW, baseY, cz));          // bottom-left
+					verts.Add(new Vector3(cx + halfW, baseY, cz));          // bottom-right
+					verts.Add(new Vector3(cx - halfW, baseY + height, cz)); // top-left
+					verts.Add(new Vector3(cx + halfW, baseY + height, cz)); // top-right
+
+					uvs.Add(new Vector2(r.xMin, r.yMin));
+					uvs.Add(new Vector2(r.xMax, r.yMin));
+					uvs.Add(new Vector2(r.xMin, r.yMax));
+					uvs.Add(new Vector2(r.xMax, r.yMax));
+
+					normals.Add(uprightNormal);
+					normals.Add(uprightNormal);
+					normals.Add(uprightNormal);
+					normals.Add(uprightNormal);
+
+					tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
+					tris.Add(b + 1); tris.Add(b + 2); tris.Add(b + 3);
+				}
 			}
 
 			if (skipped > 0)
 				Debug.LogWarning("[UOHD2D] Skipped " + skipped + " statics with missing art.");
 
+			if (waterSkipped > 0)
+				Debug.Log("[UOHD2D] Skipped " + waterSkipped + " water sprites (replaced by water surface).");
+
 			var mesh = new Mesh { name = "statics", indexFormat = IndexFormat.UInt32 };
 			mesh.SetVertices(verts);
 			mesh.SetUVs(0, uvs);
+			mesh.SetNormals(normals);
 			mesh.SetTriangles(tris, 0);
 			mesh.RecalculateBounds();
 			AssetDatabase.CreateAsset(mesh, assetDir + "/statics.asset");
@@ -350,7 +430,10 @@ namespace UOHD2D
 			var go = new GameObject("Statics");
 			go.transform.SetParent(root, false);
 			go.AddComponent<MeshFilter>().sharedMesh = mesh;
-			go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+
+			var renderer = go.AddComponent<MeshRenderer>();
+			renderer.sharedMaterial = mat;
+			renderer.shadowCastingMode = ShadowCastingMode.TwoSided; // thin quads must cast from both faces
 		}
 
 		private static T ListFromJson<T>(string path)
