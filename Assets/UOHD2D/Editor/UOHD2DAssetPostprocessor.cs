@@ -22,6 +22,21 @@ namespace UOHD2D
 				return;
 
 			var importer = (TextureImporter)assetImporter;
+
+			// Painterly tileable ground/material textures: smooth filtering, mips,
+			// repeat wrap — the opposite of the pixel-art defaults below.
+			if (assetPath.StartsWith(GeneratedRoot + "Textures/"))
+			{
+				importer.filterMode = FilterMode.Trilinear;
+				importer.mipmapEnabled = true;
+				importer.wrapMode = TextureWrapMode.Repeat;
+				importer.sRGBTexture = !assetPath.Contains("_normal");
+
+				if (assetPath.Contains("_normal"))
+					importer.textureType = TextureImporterType.NormalMap;
+
+				return;
+			}
 			importer.textureType = TextureImporterType.Default;
 			importer.filterMode = FilterMode.Point;
 			importer.mipmapEnabled = false;

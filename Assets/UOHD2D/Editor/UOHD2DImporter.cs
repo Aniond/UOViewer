@@ -26,6 +26,10 @@ namespace UOHD2D
 		[Serializable] private class Manifest { public int map, x0, y0, width, height, terrainWidth, terrainHeight, staticCount, artCount; }
 		[Serializable] private class LandInfo { public int id; public string file; }
 		[Serializable] private class LandInfoList { public LandInfo[] items; }
+		[Serializable] private class LandTextureEntry { public string file; public string texture; public string normal; public float tile = 1f; }
+		[Serializable] private class LandTextureMap { public LandTextureEntry[] entries; }
+
+		private const string LandTexturesPath = "Assets/UOHD2D/Replacements/landtextures.json";
 		[Serializable] private class StaticEntry { public int x, y, z, id, hue; }
 		[Serializable] private class StaticList { public StaticEntry[] items; }
 		[Serializable] private class ArtInfo { public string key; public int id, hue, w, h; public bool flat; public string name; }
@@ -160,31 +164,76 @@ namespace UOHD2D
 			if (!isUrp)
 				terrainShader = Shader.Find("Standard");
 
+			// Optional upgraded painterly textures replacing raw UO texmaps.
+			var upgrades = new Dictionary<string, LandTextureEntry>();
+
+			if (File.Exists(LandTexturesPath))
+			{
+				var map = JsonUtility.FromJson<LandTextureMap>(File.ReadAllText(LandTexturesPath));
+
+				if (map != null && map.entries != null)
+					foreach (var e in map.entries)
+						upgrades[e.file] = e;
+			}
+
 			foreach (var kv in groups)
 			{
-				var tex = LoadTexture(Path.Combine(dir, kv.Key.Replace('/', Path.DirectorySeparatorChar)));
+				LandTextureEntry upgrade;
+				upgrades.TryGetValue(kv.Key, out upgrade);
 
-				if (tex == null)
-					continue;
+				Texture2D baseTex = null;
+				Texture2D normalTex = null;
+				var uvTile = 1f;
+				var texName = Path.GetFileNameWithoutExtension(kv.Key);
 
-				tex.name = Path.GetFileNameWithoutExtension(kv.Key);
-				tex.filterMode = FilterMode.Point;
-				AssetDatabase.CreateAsset(tex, assetDir + "/land_" + tex.name + ".asset");
+				if (upgrade != null)
+				{
+					baseTex = AssetDatabase.LoadAssetAtPath<Texture2D>(upgrade.texture);
 
-				var mat = new Material(terrainShader) { name = "land_" + tex.name };
+					if (baseTex == null)
+						Debug.LogWarning("[UOHD2D] Upgrade texture missing: " + upgrade.texture + " (falling back to texmap)");
+					else if (!string.IsNullOrEmpty(upgrade.normal))
+						normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>(upgrade.normal);
+
+					uvTile = upgrade.tile > 0f ? upgrade.tile : 1f;
+				}
+
+				if (baseTex == null)
+				{
+					var tex = LoadTexture(Path.Combine(dir, kv.Key.Replace('/', Path.DirectorySeparatorChar)));
+
+					if (tex == null)
+						continue;
+
+					tex.name = texName;
+					tex.filterMode = FilterMode.Point;
+					AssetDatabase.CreateAsset(tex, assetDir + "/land_" + tex.name + ".asset");
+					baseTex = tex;
+				}
+
+				var mat = new Material(terrainShader) { name = "land_" + texName };
 
 				if (isUrp)
 				{
-					mat.SetTexture("_BaseMap", tex);
+					mat.SetTexture("_BaseMap", baseTex);
 					mat.SetFloat("_Smoothness", 0f);
+
+					if (normalTex != null)
+					{
+						mat.SetTexture("_BumpMap", normalTex);
+						mat.EnableKeyword("_NORMALMAP");
+					}
 				}
 				else
 				{
-					mat.mainTexture = tex;
+					mat.mainTexture = baseTex;
 					mat.SetFloat("_Glossiness", 0f);
 				}
 
-				AssetDatabase.CreateAsset(mat, assetDir + "/land_" + tex.name + ".mat");
+				if (uvTile != 1f)
+					mat.SetTextureScale("_BaseMap", new Vector2(uvTile, uvTile));
+
+				AssetDatabase.CreateAsset(mat, assetDir + "/land_" + texName + ".mat");
 
 				var verts = new List<Vector3>();
 				var uvs = new List<Vector2>();
@@ -216,15 +265,15 @@ namespace UOHD2D
 					tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
 				}
 
-				var mesh = new Mesh { name = "terrain_" + tex.name, indexFormat = IndexFormat.UInt32 };
+				var mesh = new Mesh { name = "terrain_" + texName, indexFormat = IndexFormat.UInt32 };
 				mesh.SetVertices(verts);
 				mesh.SetUVs(0, uvs);
 				mesh.SetTriangles(tris, 0);
 				mesh.RecalculateNormals();
 				mesh.RecalculateBounds();
-				AssetDatabase.CreateAsset(mesh, assetDir + "/terrain_" + tex.name + ".asset");
+				AssetDatabase.CreateAsset(mesh, assetDir + "/terrain_" + texName + ".asset");
 
-				var go = new GameObject(tex.name);
+				var go = new GameObject(texName);
 				go.transform.SetParent(terrainGo.transform, false);
 				go.AddComponent<MeshFilter>().sharedMesh = mesh;
 				go.AddComponent<MeshRenderer>().sharedMaterial = mat;
