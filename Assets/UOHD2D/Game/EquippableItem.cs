@@ -3,19 +3,35 @@ using UnityEngine;
 namespace UOHD2D.Game
 {
     /*
-     * One wearable item (helmet, hat, weapon, shield, backpack...). Bundles the mesh prefab with
-     * the fit data - which body bone it rides, and the local offset/rotation/scale that seat it
-     * correctly on that bone. Tune the fit once here and every EquipItem call places it perfectly.
+     * One wearable item. Two kinds:
      *
-     * Attach = Rigid parents the prefab to the bone (helmets, weapons - the default). Skinned would
-     * rebind a SkinnedMeshRenderer to the body skeleton (full body armor) - not all pieces support it.
+     * Prop3D - a rigid mesh (helmet, weapon, shield, backpack) parented to a body bone. Bundles
+     * the prefab with the fit data - which bone it rides and the local offset/rotation/scale that
+     * seat it there. Tune the fit once and every EquipItem call places it perfectly.
+     *
+     * ClothingLayer - worn clothing/armor as 2D art in the mannequin's UV space, composited onto
+     * the body's skin atlas by ClothingCompositor in paperdoll draw order (the "dress the 3D
+     * mannequin with 2D art" pipeline). No mesh; the body silhouette stays the mannequin's.
      */
     [CreateAssetMenu(menuName = "UO HD2D/Equippable Item")]
     public class EquippableItem : ScriptableObject
     {
+        public enum EquipKind { Prop3D, ClothingLayer }
+
         public string DisplayName = "Item";
+        public EquipKind Kind = EquipKind.Prop3D;
         public ArmorSlot Slot = ArmorSlot.Head;
         public GameObject Prefab;
+
+        [Header("Clothing layer (2D art in the body's UV space)")]
+        [Tooltip("RGBA layer authored against the mannequin's UV atlas (see the wardrobe UV reference). Opaque where cloth covers the body.")]
+        public Texture2D ClothingTexture;
+
+        [Tooltip("Tint multiplied into the layer - the UO hue.")]
+        public Color ClothingTint = Color.white;
+
+        [Tooltip("UO layer byte this clothing occupies (drives paperdoll draw order + stacking).")]
+        public byte UoLayer = UOHD2D.Game.UOLayer.MiddleTorso;
 
         [Header("Rigid fit on the bone")]
         [Tooltip("Body bone this piece rides, e.g. Head, R_Hand, L_Hand, Spine02.")]

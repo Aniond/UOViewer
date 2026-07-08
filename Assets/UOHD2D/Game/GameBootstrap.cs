@@ -25,11 +25,17 @@ namespace UOHD2D.Game
         // Maps UO item ids the server reports as worn to our 3D EquippableItems.
         public GearCatalog Gear;
 
+        // Appearance catalog for the character creation wizard (skin/hair/clothes choices).
+        public CharacterAppearanceOptions AppearanceOptions;
+
         private string _status = "";
 
         private LoginFlow _flow;
         private PlayerAvatar _player;
         private CharacterRig _playerRig;
+        private PaperdollWindow _paperdoll;
+        private CharacterCreationWizard _wizard;
+        private string _charName = "";
         private readonly Dictionary<uint, RemoteMobile> _remotes = new Dictionary<uint, RemoteMobile>();
 
         private enum UiPhase { Credentials, ServerList, CharacterList, InWorld }
@@ -115,7 +121,10 @@ namespace UOHD2D.Game
 
                 var firstOccupied = chars.FindIndex(c => c.Occupied);
                 if (firstOccupied >= 0)
+                {
+                    _charName = chars[firstOccupied].Name;
                     _flow.SelectCharacter(firstOccupied);
+                }
                 else
                     Debug.LogWarning("[UOHD2D] No occupied character slots - account has no characters yet");
             };
@@ -157,6 +166,18 @@ namespace UOHD2D.Game
             _playerRig.transform.SetParent(go.transform, false);
             _playerRig.SetFacing(_flow.Player.Direction);
 
+            // The paperdoll window (P): live view of the dressed character + worn gear.
+            _paperdoll = gameObject.GetComponent<PaperdollWindow>();
+            if (_paperdoll == null)
+                _paperdoll = gameObject.AddComponent<PaperdollWindow>();
+            _paperdoll.Target = _playerRig;
+            _paperdoll.Gear = Gear;
+            _paperdoll.CharacterName = _charName;
+
+            // Dress the character in the wizard's saved appearance (skin/hair/clothes).
+            if (AppearanceOptions != null)
+                CharacterAppearance.Load().Apply(_playerRig, AppearanceOptions);
+
             var rig = Object.FindAnyObjectByType<UOHD2DCameraRig>();
             if (rig != null)
             {
@@ -174,9 +195,12 @@ namespace UOHD2D.Game
         {
             if (_flow.Player.Serial == state.Serial)
             {
-                // Our own MobileIncoming carries what WE are wearing - apply it to the player rig.
+                // Our own MobileIncoming carries what WE are wearing - apply it to the player rig
+                // and mirror the list in the paperdoll.
                 if (_playerRig != null && Gear != null)
                     _playerRig.ApplyEquipment(state.Equipment, Gear);
+                if (_paperdoll != null)
+                    _paperdoll.SetEquipment(state.Equipment);
                 return;
             }
 
@@ -207,6 +231,9 @@ namespace UOHD2D.Game
 
         private void OnGUI()
         {
+            if (_wizard != null)
+                return; // the wizard owns the screen until Done
+
             GUILayout.BeginArea(new Rect(16, 16, 320, 400), GUI.skin.box);
 
             GUILayout.Label("UO HD2D Client");
@@ -224,6 +251,10 @@ namespace UOHD2D.Game
 
                     if (GUILayout.Button("Connect"))
                         StartLogin();
+
+                    GUILayout.Space(8);
+                    if (GUILayout.Button("Customize Character"))
+                        _wizard = CharacterCreationWizard.Open(gameObject, PlayerProfile, AppearanceOptions);
                     break;
 
                 case UiPhase.ServerList:
@@ -251,7 +282,7 @@ namespace UOHD2D.Game
                     break;
 
                 case UiPhase.InWorld:
-                    GUILayout.Label("WASD to move");
+                    GUILayout.Label("WASD to move  |  P: paperdoll  |  F3: art style");
                     break;
             }
 

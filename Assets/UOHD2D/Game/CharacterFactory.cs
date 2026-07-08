@@ -35,6 +35,11 @@ namespace UOHD2D.Game
             if (smr != null)
                 rig.Body = smr;
 
+            // Bare-skin base: replace the model's (clothed) texture with a plain skin material so
+            // the body is an undressed mannequin. Clothing/armor then layer OVER it as equipment.
+            if (smr != null && profile.Template != null && profile.Template.SkinMaterial != null)
+                smr.sharedMaterial = profile.Template.SkinMaterial;
+
             // Per-character skin/face texture override (individuals vary by texture on a shared body).
             if (profile.SkinTexture != null && smr != null && smr.sharedMaterial != null)
             {
@@ -43,6 +48,19 @@ namespace UOHD2D.Game
                 else if (mat.HasProperty("baseColorTexture")) mat.SetTexture("baseColorTexture", profile.SkinTexture);
                 smr.sharedMaterial = mat;
             }
+
+            // Wardrobe: clothing is 2D art composited over the naked skin atlas. BaseSkin is
+            // whatever base map the body ended up with; a flat-color body (no atlas) leaves the
+            // compositor inert and clothing-kind items simply don't render.
+            var compositor = go.GetComponent<ClothingCompositor>();
+            if (compositor == null)
+                compositor = go.AddComponent<ClothingCompositor>();
+            compositor.Body = smr;
+            compositor.BaseSkin = profile.SkinTexture != null
+                ? (Texture)profile.SkinTexture
+                : smr != null && smr.sharedMaterial != null && smr.sharedMaterial.HasProperty("_BaseMap")
+                    ? smr.sharedMaterial.GetTexture("_BaseMap")
+                    : null;
 
             var controller = profile.ResolvedController;
             if (controller != null)

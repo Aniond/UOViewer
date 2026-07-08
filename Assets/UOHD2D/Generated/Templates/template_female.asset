@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.Game.BodyTemplate
   Gender: 1
   BodyPrefab: {fileID: -8150428798448403706, guid: 02288f0fb59f60141bc1eeb375dcdcda, type: 3}
+  SkinMaterial: {fileID: 2100000, guid: e3919d0f19f8fa3438d62395590b394f, type: 2}
   Avatar: {fileID: 9000000, guid: 72ee34f75cf1a1941a40e7d000092fef, type: 2}
   Controller: {fileID: 9100000, guid: c7e57dbc2ac243241abdd3c365cf76d6, type: 2}
   TargetHeight: 1.72

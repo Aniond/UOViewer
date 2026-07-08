@@ -20,6 +20,11 @@ namespace UOHD2D.Game
         [Tooltip("The base body prefab/model (GLB or FBX) with the template skeleton.")]
         public GameObject BodyPrefab;
 
+        [Tooltip("Plain skin material applied to the body so it's a bare base (no baked clothing). " +
+                 "Clothing/armor then layer OVER it as separate equipment. Leave null to keep the " +
+                 "model's own texture.")]
+        public Material SkinMaterial;
+
         [Tooltip("Humanoid avatar for this template (built by UOHD2DHumanoidRig with a T-pose).")]
         public Avatar Avatar;
 

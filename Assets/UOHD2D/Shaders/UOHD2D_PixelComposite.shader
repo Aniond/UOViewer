@@ -12,6 +12,9 @@ Shader "UO HD2D/PixelComposite"
         _ColorSteps("Color Steps (0 = off)", Float) = 16
         // Push saturation/contrast so the sprite pops against the painterly world.
         _Saturation("Saturation", Range(0.5, 2.0)) = 1.25
+        // Darken silhouette-edge texels like hand-drawn sprite outlines (UO art has this
+        // dark edge everywhere - it's what makes a sprite read as deliberate art).
+        _OutlineStrength("Outline Strength (0 = off)", Range(0, 1)) = 0.75
     }
 
     SubShader
@@ -39,6 +42,7 @@ Shader "UO HD2D/PixelComposite"
             float4 _CharColor_TexelSize;
             float _ColorSteps;
             float _Saturation;
+            float _OutlineStrength;
 
             Varyings vert(Attributes IN)
             {
@@ -64,6 +68,20 @@ Shader "UO HD2D/PixelComposite"
                 // into deliberate pixel art (flat cells instead of gradients).
                 if (_ColorSteps > 0.5)
                     c.rgb = floor(saturate(c.rgb) * _ColorSteps + 0.5) / _ColorSteps;
+
+                // Sprite outline: darken texels on the silhouette edge (any neighbour texel
+                // transparent). Drawn inside the silhouette so the shape never grows.
+                if (_OutlineStrength > 0.001 && c.a > 0.01)
+                {
+                    float2 px = 1.0 / texel;
+                    half aL = SAMPLE_TEXTURE2D(_CharColor, sampler_CharColor, snapped + float2(-px.x, 0)).a;
+                    half aR = SAMPLE_TEXTURE2D(_CharColor, sampler_CharColor, snapped + float2(px.x, 0)).a;
+                    half aD = SAMPLE_TEXTURE2D(_CharColor, sampler_CharColor, snapped + float2(0, -px.y)).a;
+                    half aU = SAMPLE_TEXTURE2D(_CharColor, sampler_CharColor, snapped + float2(0, px.y)).a;
+
+                    half onEdge = step(min(min(aL, aR), min(aD, aU)), 0.01);
+                    c.rgb *= lerp(1.0, 0.3, onEdge * _OutlineStrength);
+                }
 
                 return c; // blend uses c.a
             }

@@ -4962,12 +4962,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 408965032}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a6263cd329e7cf4cb49f6abafeb7b50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.UOHD2DPixelizer
-  PixelScale: 3
+  PixelScale: 2
   CharacterLayerName: Character
   CompositeMaterial: {fileID: 2100000, guid: 248a0373a0d513c4da912d9a153ac07e, type: 2}
 --- !u!1 &415662034
@@ -5668,7 +5668,7 @@ Transform:
   m_GameObject: {fileID: 469276130}
   serializedVersion: 2
   m_LocalRotation: {x: 0.0000000037252899, y: -0, z: -0.0000000074505797, w: 1}
-  m_LocalPosition: {x: 141.77266, y: 132.60078, z: -83.245125}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6467,9 +6467,10 @@ MonoBehaviour:
   Port: 2593
   Account: admin
   Password: 1944dave
-  AutoConnect: 1
+  AutoConnect: 0
   PlayerProfile: {fileID: 11400000, guid: 9013ccbca24fa5842b45d866cb5f1222, type: 2}
   Gear: {fileID: 11400000, guid: e665c1c3c7abfb545aaaa032201c491d, type: 2}
+  AppearanceOptions: {fileID: 11400000, guid: daf308b6635dca44fb9357d9493bea0e, type: 2}
 --- !u!4 &509520650
 Transform:
   m_ObjectHideFlags: 0
@@ -26269,7 +26270,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4.070344, y: 4.070344, z: 4.070344}
+  m_LocalScale: {x: 0.15, y: 0.15, z: 0.15}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1169120014}
@@ -27506,7 +27507,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1673500645}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 13
   m_Type: 1
   m_Color: {r: 0, g: 0, b: 0, a: 0}

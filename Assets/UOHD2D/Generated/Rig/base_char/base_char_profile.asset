@@ -15,7 +15,8 @@ MonoBehaviour:
   Template: {fileID: 11400000, guid: 235fdebc8001ecd45876edbf83d158c1, type: 2}
   SkinTexture: {fileID: 0}
   DefaultGear:
-  - {fileID: 11400000, guid: c7b8b6438623f4e41a5bd44d84e997a7, type: 2}
+  - {fileID: 11400000, guid: 8024cfa751cab3c45a0dd32c2dd08446, type: 2}
+  - {fileID: 11400000, guid: 08310f719290f254a93e5a064f1d6a3a, type: 2}
   RigPrefab: {fileID: -8150428798448403706, guid: c1078436414f2d54d8696fe8fed3cf11, type: 3}
   Controller: {fileID: 9100000, guid: 6c64e2f7c3f75264d8b445c79d3363d6, type: 2}
   Avatar: {fileID: 9000000, guid: 75de5f034bb03594986edabc992bde5d, type: 2}

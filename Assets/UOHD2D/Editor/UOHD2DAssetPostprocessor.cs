@@ -37,6 +37,20 @@ namespace UOHD2D
 
 				return;
 			}
+			// Character skin atlases under the male rig are photographic UV maps, not pixel
+			// sheets - pixelation happens at the screen RT (UOHD2DPixelizer), so point-filtering
+			// the source atlas would only alias the wardrobe composite.
+			if (assetPath.StartsWith(GeneratedRoot + "Rig/base_male/"))
+			{
+				var isNormal = assetPath.Contains("NormalGL");
+				importer.textureType = isNormal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+				importer.filterMode = FilterMode.Bilinear;
+				importer.mipmapEnabled = true;
+				importer.wrapMode = TextureWrapMode.Clamp;
+				importer.sRGBTexture = !isNormal;
+				return;
+			}
+
 			importer.textureType = TextureImporterType.Default;
 			importer.filterMode = FilterMode.Point;
 			importer.mipmapEnabled = false;

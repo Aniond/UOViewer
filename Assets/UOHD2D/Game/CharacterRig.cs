@@ -17,10 +17,23 @@ namespace UOHD2D.Game
         // The body skin. Its bones[] + rootBone define the skeleton every armor piece shares.
         public SkinnedMeshRenderer Body;
 
+        // Composites 2D clothing layers onto the body's skin atlas (the wardrobe). Resolved in
+        // Bind(); ClothingLayer-kind items route here instead of spawning a mesh.
+        public ClothingCompositor Compositor;
+
         // How fast the rig turns to face a new direction while already moving (degrees/sec).
         // Starting from rest snaps instantly instead - blending the walk cycle while still
         // rotating toward the travel direction reads as a false backstep.
         public float TurnSpeed = 1080f;
+
+        // Facing changes from rest at or beyond this angle play the Turn animation (with the
+        // rig rotating at IdleTurnSpeed) instead of snapping. Requires a controller with a
+        // "Turn" trigger; smaller changes and older controllers snap as before.
+        public float TurnAnimThreshold = 90f;
+
+        // Yaw speed while the idle turn animation plays (degrees/sec). Tune to the turn clip
+        // so the feet shuffle roughly matches the rotation.
+        public float IdleTurnSpeed = 360f;
 
         // Added to the computed facing yaw. base_char's chest faces -Z (south, toward camera) at
         // identity, so an offset of 180 makes yaw=dir*45+180 face the true travel direction for
@@ -43,10 +56,13 @@ namespace UOHD2D.Game
 
         private Animator _animator;
         private static readonly int MovingHash = Animator.StringToHash("Moving");
+        private static readonly int TurnHash = Animator.StringToHash("Turn");
 
         private Quaternion _targetYaw;
         private bool _bound;
         private bool _lastMoving;
+        private bool _hasTurnParam;
+        private bool _idleTurning;
 
         private void Awake()
         {
@@ -90,6 +106,24 @@ namespace UOHD2D.Game
 
             _animator = GetComponentInChildren<Animator>();
 
+            if (Compositor == null)
+                Compositor = GetComponent<ClothingCompositor>();
+
+            // Only controllers that define a "Turn" trigger get the idle turn animation; the
+            // legacy Idle/Walk controllers (female, stand-ins) keep snapping silently.
+            _hasTurnParam = false;
+            if (_animator != null && _animator.runtimeAnimatorController != null)
+            {
+                foreach (var p in _animator.parameters)
+                {
+                    if (p.type == AnimatorControllerParameterType.Trigger && p.nameHash == TurnHash)
+                    {
+                        _hasTurnParam = true;
+                        break;
+                    }
+                }
+            }
+
             _targetYaw = transform.rotation;
             _bound = true;
         }
@@ -103,10 +137,25 @@ namespace UOHD2D.Game
 
             _lastMoving = moving;
 
+            // Movement interrupts a pending idle turn: the first stride must already point at
+            // the travel direction (no backstep), and the Turn trigger must not fire later.
+            if (moving && _idleTurning)
+            {
+                transform.rotation = _targetYaw;
+                _idleTurning = false;
+
+                if (_animator != null && _hasTurnParam)
+                    _animator.ResetTrigger(TurnHash);
+            }
+
             if (_animator != null && _animator.runtimeAnimatorController != null)
                 _animator.SetBool(MovingHash, moving);
         }
 
+        // DEPRECATED for worn clothing: clothing/armor is now 2D texture layers composited by
+        // ClothingCompositor. Retained for legacy skinned pieces authored against the shared
+        // skeleton; no catalog path routes here anymore.
+        //
         // Equip a bone-shared armor piece. piece is a prefab/instance whose SkinnedMeshRenderer
         // was authored against a skeleton with the same bone names as this body. Returns the
         // spawned instance (or null on failure). Any existing piece in the slot is removed first.
@@ -203,36 +252,67 @@ namespace UOHD2D.Game
         }
 
         // Equip an item from its saved fit definition - the one-call path for the catalog.
+        // Clothing-kind items paint onto the body atlas (no GameObject); props spawn a mesh.
         public GameObject EquipItem(EquippableItem item)
         {
-            if (item == null || item.Prefab == null)
+            if (item == null)
+                return null;
+
+            if (item.Kind == EquippableItem.EquipKind.ClothingLayer)
+            {
+                if (!_bound)
+                    Bind();
+
+                if (Compositor != null && item.ClothingTexture != null)
+                    Compositor.SetLayer(item.UoLayer, item.ClothingTexture, item.ClothingTint);
+
+                return null;
+            }
+
+            if (item.Prefab == null)
                 return null;
 
             return EquipProp(item.Prefab, item.BoneName, item.Slot, item.LocalOffset, item.LocalEuler, item.Scale);
         }
 
-        // Apply the server's worn-gear list: map each UO item id via the catalog and equip the
-        // 3D piece. Slots present in the server list but not resolvable stay empty; slots the
-        // character had but the server no longer reports are unequipped. Unmapped ids are logged
-        // so it's clear which gear still needs a mesh.
+        // Apply the server's worn-gear list: map each UO item id via the catalog, then paint
+        // clothing-kind items onto the body atlas and spawn prop-kind items on their bones.
+        // Anything the character wore but the server no longer reports is removed - prop slots
+        // are cleared and stale clothing layers are dropped from the composite. Unmapped ids
+        // are logged so it's clear which gear still needs art.
         public void ApplyEquipment(IEnumerable<Network.EquipEntry> equipment, GearCatalog catalog)
         {
             if (catalog == null)
                 return;
 
             var filled = new HashSet<ArmorSlot>();
+            var wornLayers = new HashSet<byte>();
 
             if (equipment != null)
             {
                 foreach (var e in equipment)
                 {
+                    var item = catalog.Resolve(e.ItemId);
+
+                    if (item != null && item.Kind == EquippableItem.EquipKind.ClothingLayer)
+                    {
+                        // Clothing keys on the server's layer byte, not an ArmorSlot - layers
+                        // like Waist that collapse to no slot still paint and stack correctly.
+                        if (Compositor != null && item.ClothingTexture != null)
+                        {
+                            Compositor.SetLayer(e.Layer, item.ClothingTexture, item.ClothingTint);
+                            wornLayers.Add(e.Layer);
+                        }
+
+                        continue;
+                    }
+
                     if (!UOLayer.ToSlot(e.Layer, out var slot))
                         continue; // a layer we don't render (rings, hair, ...)
 
-                    var item = catalog.Resolve(e.ItemId);
                     if (item == null)
                     {
-                        Debug.Log("[UOHD2D] no gear mesh for UO item 0x" + e.ItemId.ToString("X4") + " (layer 0x" + e.Layer.ToString("X2") + ") - slot " + slot + " left empty.");
+                        Debug.Log("[UOHD2D] no gear art for UO item 0x" + e.ItemId.ToString("X4") + " (layer 0x" + e.Layer.ToString("X2") + ") - slot " + slot + " left empty.");
                         continue;
                     }
 
@@ -241,17 +321,34 @@ namespace UOHD2D.Game
                 }
             }
 
-            // Clear any slots the server no longer reports as worn.
+            // Remove only what the SERVER previously equipped and no longer reports. Locally
+            // equipped default gear is left alone (the server never knew about it).
             _clearScratch.Clear();
-            foreach (var slot in _equipped.Keys)
+            foreach (var slot in _serverSlots)
                 if (!filled.Contains(slot))
                     _clearScratch.Add(slot);
 
             foreach (var slot in _clearScratch)
                 UnequipArmor(slot);
+
+            if (Compositor != null)
+                foreach (var layer in _serverClothingLayers)
+                    if (!wornLayers.Contains(layer))
+                        Compositor.ClearLayer(layer);
+
+            _serverSlots.Clear();
+            _serverSlots.UnionWith(filled);
+            _serverClothingLayers.Clear();
+            _serverClothingLayers.UnionWith(wornLayers);
         }
 
         private readonly List<ArmorSlot> _clearScratch = new List<ArmorSlot>();
+
+        // What the SERVER currently has on us (clothing layers + prop slots). Server sync may
+        // only remove its own contributions - DefaultGear stays on unless the server explicitly
+        // covers the same layer/slot.
+        private readonly HashSet<byte> _serverClothingLayers = new HashSet<byte>();
+        private readonly HashSet<ArmorSlot> _serverSlots = new HashSet<ArmorSlot>();
 
         public void UnequipArmor(ArmorSlot slot)
         {
@@ -273,19 +370,47 @@ namespace UOHD2D.Game
             // Solved from the model's measured rest-facing (chest points -Z / south at identity):
             // yaw = dir*45 + 180 faces the travel direction for all 8 UO directions.
             var yaw = (uoDirection & 0x07) * 45f + ModelYawOffset;
-            _targetYaw = Quaternion.Euler(0f, yaw, 0f);
+            var target = Quaternion.Euler(0f, yaw, 0f);
 
-            // From rest, face the travel direction immediately: the first walk stride must
-            // already point where we're going, or it reads as stepping backward first.
-            if (!_lastMoving)
+            // Called every frame with the current direction - only a facing CHANGE may start
+            // a turn, else the trigger would re-fire while the rig is still rotating.
+            if (target == _targetYaw)
+                return;
+
+            _targetYaw = target;
+
+            if (_lastMoving)
+                return;
+
+            // From rest: a big turn plays the turn animation while the rig rotates; a small
+            // adjustment (or a controller without a Turn state) snaps immediately - the first
+            // walk stride must already point where we're going, or it reads as a backstep.
+            var delta = Quaternion.Angle(transform.rotation, _targetYaw);
+
+            if (_hasTurnParam && delta >= TurnAnimThreshold)
+            {
+                _idleTurning = true;
+                _animator.SetTrigger(TurnHash);
+            }
+            else
+            {
                 transform.rotation = _targetYaw;
+            }
         }
 
         private void Update()
         {
             // Smoothly rotate toward the target facing so turns read rather than snap-pop.
+            // Idle turns move at the (slower) animation-matched speed.
             if (transform.rotation != _targetYaw)
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, _targetYaw, TurnSpeed * Time.deltaTime);
+            {
+                var speed = _idleTurning ? IdleTurnSpeed : TurnSpeed;
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, _targetYaw, speed * Time.deltaTime);
+            }
+            else if (_idleTurning)
+            {
+                _idleTurning = false;
+            }
         }
 
         private void LateUpdate()

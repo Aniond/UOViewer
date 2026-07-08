@@ -26,6 +26,56 @@ namespace UOHD2D.Game
         public const byte OuterLegs = 0x17;
         public const byte InnerLegs = 0x18;
 
+        // Classic paperdoll draw order for clothing layers, innermost first: the compositor
+        // paints them onto the body atlas in this sequence so a tunic covers the shirt, a robe
+        // covers the tunic, and so on.
+        private static readonly byte[] PaperdollOrder =
+        {
+            Shoes, Pants, Shirt, InnerLegs, InnerTorso, Waist, OuterLegs,
+            MiddleTorso, Arms, Gloves, OuterTorso, Neck, Cloak, Helm,
+        };
+
+        // Composite order for a clothing layer - lower paints first (closer to the skin).
+        // Unknown layers sort after all known ones, by their byte value.
+        public static int DrawOrder(byte layer)
+        {
+            for (var i = 0; i < PaperdollOrder.Length; i++)
+                if (PaperdollOrder[i] == layer)
+                    return i;
+
+            return 100 + layer;
+        }
+
+        // Human-readable layer name for UI (paperdoll equipment list).
+        public static string LayerName(byte layer)
+        {
+            switch (layer)
+            {
+                case OneHanded:   return "Main hand";
+                case TwoHanded:   return "Off hand";
+                case Shoes:       return "Shoes";
+                case Pants:       return "Pants";
+                case Shirt:       return "Shirt";
+                case Helm:        return "Head";
+                case Gloves:      return "Gloves";
+                case Ring:        return "Ring";
+                case Neck:        return "Neck";
+                case Hair:        return "Hair";
+                case Waist:       return "Waist";
+                case InnerTorso:  return "Chest";
+                case Bracelet:    return "Bracelet";
+                case FacialHair:  return "Beard";
+                case MiddleTorso: return "Tunic";
+                case Earrings:    return "Earrings";
+                case Arms:        return "Arms";
+                case Cloak:       return "Cloak";
+                case OuterTorso:  return "Robe";
+                case OuterLegs:   return "Outer legs";
+                case InnerLegs:   return "Leggings";
+                default:          return "Layer 0x" + layer.ToString("X2");
+            }
+        }
+
         // Map a UO layer to our equipment slot. Returns false for layers we don't render
         // (rings, hair, etc.) so the caller can skip them.
         public static bool ToSlot(byte layer, out ArmorSlot slot)

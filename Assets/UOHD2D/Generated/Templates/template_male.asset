@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: template_male
   m_EditorClassIdentifier: Assembly-CSharp::UOHD2D.Game.BodyTemplate
   Gender: 0
-  BodyPrefab: {fileID: -8150428798448403706, guid: c1078436414f2d54d8696fe8fed3cf11, type: 3}
-  Avatar: {fileID: 9000000, guid: 75de5f034bb03594986edabc992bde5d, type: 2}
-  Controller: {fileID: 9100000, guid: 6c64e2f7c3f75264d8b445c79d3363d6, type: 2}
+  BodyPrefab: {fileID: 2632694824200810743, guid: 004f01a7a14f63c4c8703a4a8aeda3cd, type: 3}
+  SkinMaterial: {fileID: 2100000, guid: 9235c468705fd904691487710692c709, type: 2}
+  Avatar: {fileID: 9000000, guid: d838ddb559068244a80e44f35e8f8748, type: 3}
+  Controller: {fileID: 9100000, guid: bbab3f7cf0c8a1e42b1bde49f153cdd0, type: 2}
   TargetHeight: 1.8
-  GroundOffset: 0.02
+  GroundOffset: 0
