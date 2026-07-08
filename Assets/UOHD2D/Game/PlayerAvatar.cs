@@ -90,6 +90,10 @@ namespace UOHD2D.Game
                 return;
             }
 
+            // The creation wizard is modal: no walking (keys or mouse) while dressing.
+            if (CharacterCreationWizard.IsOpen)
+                return;
+
             var dx = 0;
             var dy = 0;
 

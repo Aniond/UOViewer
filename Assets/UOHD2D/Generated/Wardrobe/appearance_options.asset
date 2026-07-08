@@ -15,42 +15,60 @@ MonoBehaviour:
   SkinTones:
   - Name: Pale
     Color: {r: 1, g: 0.94, b: 0.88, a: 1}
+    UoHue: 1002
   - Name: Fair
     Color: {r: 1, g: 1, b: 1, a: 1}
+    UoHue: 1009
   - Name: Tan
     Color: {r: 0.87, g: 0.72, b: 0.55, a: 1}
+    UoHue: 1023
   - Name: Bronze
     Color: {r: 0.72, g: 0.53, b: 0.38, a: 1}
+    UoHue: 1040
   - Name: Dark
     Color: {r: 0.45, g: 0.32, b: 0.24, a: 1}
+    UoHue: 1058
   HairStyles:
   - Name: Short
     Texture: {fileID: 2800000, guid: 376aec30b8d9cc042be0ac3acbcef949, type: 3}
+    UoItemId: 8251
   - Name: Long
     Texture: {fileID: 2800000, guid: f9b49ee730432544c9a4927e9e351e3b, type: 3}
+    UoItemId: 8252
   HairColors:
   - Name: Black
     Color: {r: 0.13, g: 0.11, b: 0.1, a: 1}
+    UoHue: 1102
   - Name: Brown
     Color: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+    UoHue: 1114
   - Name: Blonde
     Color: {r: 0.85, g: 0.7, b: 0.38, a: 1}
+    UoHue: 1117
   - Name: Red
     Color: {r: 0.55, g: 0.2, b: 0.1, a: 1}
+    UoHue: 1140
   - Name: Gray
     Color: {r: 0.62, g: 0.62, b: 0.62, a: 1}
+    UoHue: 1147
   ClothHues:
   - Name: Red
     Color: {r: 0.75, g: 0.18, b: 0.15, a: 1}
+    UoHue: 33
   - Name: Blue
     Color: {r: 0.2, g: 0.3, b: 0.65, a: 1}
+    UoHue: 99
   - Name: Green
     Color: {r: 0.2, g: 0.5, b: 0.25, a: 1}
+    UoHue: 68
   - Name: Purple
     Color: {r: 0.45, g: 0.25, b: 0.55, a: 1}
+    UoHue: 16
   - Name: Brown
     Color: {r: 0.45, g: 0.33, b: 0.2, a: 1}
+    UoHue: 743
   - Name: Undyed
     Color: {r: 0.85, g: 0.82, b: 0.75, a: 1}
+    UoHue: 1001
   TunicTexture: {fileID: 2800000, guid: 7baf330c7e702d1438fce5958a488ea9, type: 3}
   PantsTexture: {fileID: 2800000, guid: 8be5ef352c2ae7245a936c0aebbc1525, type: 3}

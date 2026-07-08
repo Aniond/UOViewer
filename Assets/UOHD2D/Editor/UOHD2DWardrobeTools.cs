@@ -42,6 +42,10 @@ namespace UOHD2D
         // dominated by "Waist" (never "Hip").
         private static readonly string[] TunicBones = { "Spine01", "Spine02" };
         private static readonly string[] PantsBones = { "Waist", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf" };
+        private static readonly string[] ArmsBones = { "L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm" };
+        private static readonly string[] GloveBones = { "L_Hand", "R_Hand" };
+        private static readonly string[] GorgetBones = { "NeckTwist" };
+        private static readonly string[] BootBones = { "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase" };
 
         [MenuItem("UO HD2D/Wardrobe/Export UV Authoring Reference")]
         public static void ExportUvReference()
@@ -107,6 +111,59 @@ namespace UOHD2D
             Debug.Log("[UOHD2D] Wardrobe: POC tunic + pants built, added to default gear and gear catalog.");
         }
 
+        // The Ranger kit (and any studded/leather armor the server hands out): bakes a bone-
+        // region layer per armor piece and maps every UO graphic id that shares the art.
+        // Server hues (e.g. ranger green 68) tint at composite time via the catalog hue table.
+        [MenuItem("UO HD2D/Wardrobe/Build Studded Armor Set")]
+        public static void BuildStuddedArmorSet()
+        {
+            var smr = LoadBodySkin();
+            if (smr == null)
+                return;
+
+            var basePixels = ReadTexturePixels(LoadBaseSkinTexture(), out var w, out var h);
+            if (basePixels == null)
+                return;
+
+            var leather = new Color(0.42f, 0.33f, 0.22f, 1f); // authored tint when the server sends no hue
+
+            var pieces = new[]
+            {
+                new { slug = "studded_chest",  name = "Studded Chest",  bones = TunicBones,  layer = Game.UOLayer.InnerTorso },
+                new { slug = "studded_legs",   name = "Studded Legs",   bones = PantsBones,  layer = Game.UOLayer.Pants },
+                new { slug = "studded_arms",   name = "Studded Arms",   bones = ArmsBones,   layer = Game.UOLayer.Arms },
+                new { slug = "studded_gloves", name = "Studded Gloves", bones = GloveBones,  layer = Game.UOLayer.Gloves },
+                new { slug = "studded_gorget", name = "Studded Gorget", bones = GorgetBones, layer = Game.UOLayer.Neck },
+                new { slug = "boots",          name = "Boots",          bones = BootBones,   layer = Game.UOLayer.Shoes },
+            };
+
+            var items = new System.Collections.Generic.Dictionary<string, Game.EquippableItem>();
+
+            foreach (var p in pieces)
+            {
+                var path = WardrobeRoot + "/" + p.slug + ".png";
+                BakeBoneRegionLayer(smr, basePixels, w, h, p.bones, path);
+                items[p.slug] = UpsertClothingItem(p.slug, p.name,
+                    AssetDatabase.LoadAssetAtPath<Texture2D>(path), p.layer, leather);
+            }
+
+            // Studded armor graphics (also worn by the AOS "Ranger set" artifacts).
+            MapCatalogId(0x13DB, items["studded_chest"]);
+            MapCatalogId(0x13DA, items["studded_legs"]);
+            MapCatalogId(0x13DC, items["studded_arms"]);
+            MapCatalogId(0x13D5, items["studded_gloves"]);
+            MapCatalogId(0x13D6, items["studded_gorget"]);
+
+            // Footwear graphics that all render as the baked boots layer for now.
+            MapCatalogId(0x170B, items["boots"]);   // boots
+            MapCatalogId(0x170F, items["boots"]);   // shoes
+            MapCatalogId(0x170D, items["boots"]);   // sandals
+            MapCatalogId(0x1711, items["boots"]);   // thigh boots
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[UOHD2D] Wardrobe: studded armor set baked (chest/legs/arms/gloves/gorget/boots) and mapped in the gear catalog.");
+        }
+
         [MenuItem("UO HD2D/Wardrobe/Build Appearance Options")]
         public static void BuildAppearanceOptions()
         {
@@ -138,43 +195,47 @@ namespace UOHD2D
                 AssetDatabase.CreateAsset(options, OptionsPath);
             }
 
+            // UoHue = the authentic UO hue number sent at character creation (the server clips
+            // to skin 1002-1058 / hair 1102-1149 / cloth 2-1001); Color = how we render it.
             options.SkinTones = new[]
             {
-                Named("Pale", new Color(1f, 0.94f, 0.88f)),
-                Named("Fair", Color.white),
-                Named("Tan", new Color(0.87f, 0.72f, 0.55f)),
-                Named("Bronze", new Color(0.72f, 0.53f, 0.38f)),
-                Named("Dark", new Color(0.45f, 0.32f, 0.24f)),
+                Named("Pale", new Color(1f, 0.94f, 0.88f), 1002),
+                Named("Fair", Color.white, 1009),
+                Named("Tan", new Color(0.87f, 0.72f, 0.55f), 1023),
+                Named("Bronze", new Color(0.72f, 0.53f, 0.38f), 1040),
+                Named("Dark", new Color(0.45f, 0.32f, 0.24f), 1058),
             };
 
             options.HairStyles = new[]
             {
-                new Game.CharacterAppearanceOptions.HairStyle { Name = "Short", Texture = AssetDatabase.LoadAssetAtPath<Texture2D>(shortPath) },
-                new Game.CharacterAppearanceOptions.HairStyle { Name = "Long", Texture = AssetDatabase.LoadAssetAtPath<Texture2D>(longPath) },
+                new Game.CharacterAppearanceOptions.HairStyle { Name = "Short", Texture = AssetDatabase.LoadAssetAtPath<Texture2D>(shortPath), UoItemId = 0x203B },
+                new Game.CharacterAppearanceOptions.HairStyle { Name = "Long", Texture = AssetDatabase.LoadAssetAtPath<Texture2D>(longPath), UoItemId = 0x203C },
             };
 
             options.HairColors = new[]
             {
-                Named("Black", new Color(0.13f, 0.11f, 0.10f)),
-                Named("Brown", new Color(0.35f, 0.22f, 0.12f)),
-                Named("Blonde", new Color(0.85f, 0.70f, 0.38f)),
-                Named("Red", new Color(0.55f, 0.20f, 0.10f)),
-                Named("Gray", new Color(0.62f, 0.62f, 0.62f)),
+                Named("Black", new Color(0.13f, 0.11f, 0.10f), 1102),
+                Named("Brown", new Color(0.35f, 0.22f, 0.12f), 1114),
+                Named("Blonde", new Color(0.85f, 0.70f, 0.38f), 1117),
+                Named("Red", new Color(0.55f, 0.20f, 0.10f), 1140),
+                Named("Gray", new Color(0.62f, 0.62f, 0.62f), 1147),
             };
 
             options.ClothHues = new[]
             {
-                Named("Red", new Color(0.75f, 0.18f, 0.15f)),
-                Named("Blue", new Color(0.2f, 0.3f, 0.65f)),
-                Named("Green", new Color(0.2f, 0.5f, 0.25f)),
-                Named("Purple", new Color(0.45f, 0.25f, 0.55f)),
-                Named("Brown", new Color(0.45f, 0.33f, 0.2f)),
-                Named("Undyed", new Color(0.85f, 0.82f, 0.75f)),
+                Named("Red", new Color(0.75f, 0.18f, 0.15f), 33),
+                Named("Blue", new Color(0.2f, 0.3f, 0.65f), 99),
+                Named("Green", new Color(0.2f, 0.5f, 0.25f), 68),
+                Named("Purple", new Color(0.45f, 0.25f, 0.55f), 16),
+                Named("Brown", new Color(0.45f, 0.33f, 0.2f), 743),
+                Named("Undyed", new Color(0.85f, 0.82f, 0.75f), 1001),
             };
 
             options.TunicTexture = tunicTex;
             options.PantsTexture = pantsTex;
             EditorUtility.SetDirty(options);
+
+            WireServerCreatedGear(options, shortPath, longPath);
             AssetDatabase.SaveAssets();
 
             var boot = Object.FindFirstObjectByType<Game.GameBootstrap>(FindObjectsInactive.Include);
@@ -189,9 +250,54 @@ namespace UOHD2D
                 + (boot != null ? " and assigned to GameBootstrap." : " - no GameBootstrap in the open scene, assign it manually."));
         }
 
-        private static Game.CharacterAppearanceOptions.NamedColor Named(string name, Color color)
+        private static Game.CharacterAppearanceOptions.NamedColor Named(string name, Color color, ushort uoHue)
         {
-            return new Game.CharacterAppearanceOptions.NamedColor { Name = name, Color = color };
+            return new Game.CharacterAppearanceOptions.NamedColor { Name = name, Color = color, UoHue = uoHue };
+        }
+
+        // Server-created characters wear REAL items (ServUO CharacterCreation: a random
+        // shirt/fancy shirt/doublet, long/short pants, shoes, plus the hair layer). Map every
+        // id the server can hand out to our art, and teach the catalog the render color of
+        // each hue we offer, so a server-dressed spawn matches the wizard preview.
+        private static void WireServerCreatedGear(Game.CharacterAppearanceOptions options, string shortHairPath, string longHairPath)
+        {
+            var tunicItem = AssetDatabase.LoadAssetAtPath<Game.EquippableItem>(WardrobeRoot + "/poc_tunic.asset");
+            var pantsItem = AssetDatabase.LoadAssetAtPath<Game.EquippableItem>(WardrobeRoot + "/poc_pants.asset");
+
+            MapCatalogId(0x1517, tunicItem); // shirt
+            MapCatalogId(0x1EFD, tunicItem); // fancy shirt
+            MapCatalogId(0x1F7B, tunicItem); // doublet
+            MapCatalogId(0x1539, pantsItem); // long pants
+            MapCatalogId(0x152E, pantsItem); // short pants
+
+            var shortHair = UpsertClothingItem("poc_hair_short", "Short Hair",
+                AssetDatabase.LoadAssetAtPath<Texture2D>(shortHairPath), Game.UOLayer.Hair, Color.white);
+            var longHair = UpsertClothingItem("poc_hair_long", "Long Hair",
+                AssetDatabase.LoadAssetAtPath<Texture2D>(longHairPath), Game.UOLayer.Hair, Color.white);
+
+            MapCatalogId(0x203B, shortHair);
+            MapCatalogId(0x203C, longHair);
+
+            var catalog = AssetDatabase.LoadAssetAtPath<Game.GearCatalog>(CatalogPath);
+            if (catalog == null)
+                return;
+
+            catalog.Hues.Clear();
+            AddHues(catalog, options.SkinTones);
+            AddHues(catalog, options.HairColors);
+            AddHues(catalog, options.ClothHues);
+            catalog.Invalidate();
+            EditorUtility.SetDirty(catalog);
+        }
+
+        private static void AddHues(Game.GearCatalog catalog, Game.CharacterAppearanceOptions.NamedColor[] list)
+        {
+            if (list == null)
+                return;
+
+            foreach (var c in list)
+                if (c.UoHue != 0 && !catalog.Hues.Exists(h => h.UoHue == c.UoHue))
+                    catalog.Hues.Add(new Game.GearCatalog.HueEntry { UoHue = c.UoHue, Color = c.Color });
         }
 
         // ------------------------------------------------------------------ baking

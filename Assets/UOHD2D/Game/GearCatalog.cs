@@ -20,9 +20,21 @@ namespace UOHD2D.Game
             public EquippableItem Item;
         }
 
+        [System.Serializable]
+        public struct HueEntry
+        {
+            [Tooltip("UO hue number as sent by the server in equipment packets.")]
+            public int UoHue;
+            public Color Color;
+        }
+
         public List<Entry> Entries = new List<Entry>();
 
+        [Tooltip("UO hue -> render tint. We don't ship hues.mul, so only hues we offer at creation are mapped; unmapped hues fall back to the item's authored tint.")]
+        public List<HueEntry> Hues = new List<HueEntry>();
+
         private Dictionary<int, EquippableItem> _byId;
+        private Dictionary<int, Color> _hueById;
 
         private void BuildIndex()
         {
@@ -41,7 +53,21 @@ namespace UOHD2D.Game
             return _byId.TryGetValue(uoItemId, out var item) ? item : null;
         }
 
+        // Look up the render tint for a UO hue. False when we have no mapping for it.
+        public bool ResolveHue(int uoHue, out Color color)
+        {
+            if (_hueById == null)
+            {
+                _hueById = new Dictionary<int, Color>();
+                foreach (var h in Hues)
+                    if (!_hueById.ContainsKey(h.UoHue))
+                        _hueById[h.UoHue] = h.Color;
+            }
+
+            return _hueById.TryGetValue(uoHue, out color);
+        }
+
         // Rebuild the index after edits (call from tooling if the list changed at runtime).
-        public void Invalidate() => _byId = null;
+        public void Invalidate() { _byId = null; _hueById = null; }
     }
 }

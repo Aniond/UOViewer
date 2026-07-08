@@ -23,3 +23,64 @@ MonoBehaviour:
     Item: {fileID: 11400000, guid: 08310f719290f254a93e5a064f1d6a3a, type: 2}
   - UoItemId: 5433
     Item: {fileID: 11400000, guid: 08310f719290f254a93e5a064f1d6a3a, type: 2}
+  - UoItemId: 5399
+    Item: {fileID: 11400000, guid: 8024cfa751cab3c45a0dd32c2dd08446, type: 2}
+  - UoItemId: 7933
+    Item: {fileID: 11400000, guid: 8024cfa751cab3c45a0dd32c2dd08446, type: 2}
+  - UoItemId: 8059
+    Item: {fileID: 11400000, guid: 8024cfa751cab3c45a0dd32c2dd08446, type: 2}
+  - UoItemId: 8251
+    Item: {fileID: 11400000, guid: 92b1b024ac7a59249929405e31b3fb6b, type: 2}
+  - UoItemId: 8252
+    Item: {fileID: 11400000, guid: d69d2ff1da3b8ce498dcb2d35c59e435, type: 2}
+  - UoItemId: 5083
+    Item: {fileID: 11400000, guid: 3a57a5ef579b27f4dbe2f4999eb6d282, type: 2}
+  - UoItemId: 5082
+    Item: {fileID: 11400000, guid: 7a79beb708d377f45b4e6588f2c8b2fb, type: 2}
+  - UoItemId: 5084
+    Item: {fileID: 11400000, guid: c3a8d7f776c68b945bcc8dc7b42e33b8, type: 2}
+  - UoItemId: 5077
+    Item: {fileID: 11400000, guid: 6cde4a491b95aa4458ac56cc4f309b13, type: 2}
+  - UoItemId: 5078
+    Item: {fileID: 11400000, guid: f3bdf0bf0f388b642b3f713d1cde1481, type: 2}
+  - UoItemId: 5899
+    Item: {fileID: 11400000, guid: e407b1632074aa94783cb95468963523, type: 2}
+  - UoItemId: 5903
+    Item: {fileID: 11400000, guid: e407b1632074aa94783cb95468963523, type: 2}
+  - UoItemId: 5901
+    Item: {fileID: 11400000, guid: e407b1632074aa94783cb95468963523, type: 2}
+  - UoItemId: 5905
+    Item: {fileID: 11400000, guid: e407b1632074aa94783cb95468963523, type: 2}
+  Hues:
+  - UoHue: 1002
+    Color: {r: 1, g: 0.94, b: 0.88, a: 1}
+  - UoHue: 1009
+    Color: {r: 1, g: 1, b: 1, a: 1}
+  - UoHue: 1023
+    Color: {r: 0.87, g: 0.72, b: 0.55, a: 1}
+  - UoHue: 1040
+    Color: {r: 0.72, g: 0.53, b: 0.38, a: 1}
+  - UoHue: 1058
+    Color: {r: 0.45, g: 0.32, b: 0.24, a: 1}
+  - UoHue: 1102
+    Color: {r: 0.13, g: 0.11, b: 0.1, a: 1}
+  - UoHue: 1114
+    Color: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+  - UoHue: 1117
+    Color: {r: 0.85, g: 0.7, b: 0.38, a: 1}
+  - UoHue: 1140
+    Color: {r: 0.55, g: 0.2, b: 0.1, a: 1}
+  - UoHue: 1147
+    Color: {r: 0.62, g: 0.62, b: 0.62, a: 1}
+  - UoHue: 33
+    Color: {r: 0.75, g: 0.18, b: 0.15, a: 1}
+  - UoHue: 99
+    Color: {r: 0.2, g: 0.3, b: 0.65, a: 1}
+  - UoHue: 68
+    Color: {r: 0.2, g: 0.5, b: 0.25, a: 1}
+  - UoHue: 16
+    Color: {r: 0.45, g: 0.25, b: 0.55, a: 1}
+  - UoHue: 743
+    Color: {r: 0.45, g: 0.33, b: 0.2, a: 1}
+  - UoHue: 1001
+    Color: {r: 0.85, g: 0.82, b: 0.75, a: 1}

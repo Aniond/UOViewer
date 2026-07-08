@@ -300,7 +300,13 @@ namespace UOHD2D.Game
                         // like Waist that collapse to no slot still paint and stack correctly.
                         if (Compositor != null && item.ClothingTexture != null)
                         {
-                            Compositor.SetLayer(e.Layer, item.ClothingTexture, item.ClothingTint);
+                            // Prefer the server's hue (real dyed items) over the item's
+                            // authored tint; unmapped hues keep the authored look.
+                            var tint = e.Hue != 0 && catalog.ResolveHue(e.Hue, out var hueColor)
+                                ? hueColor
+                                : item.ClothingTint;
+
+                            Compositor.SetLayer(e.Layer, item.ClothingTexture, tint);
                             wornLayers.Add(e.Layer);
                         }
 

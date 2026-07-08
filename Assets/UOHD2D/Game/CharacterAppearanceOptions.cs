@@ -16,6 +16,9 @@ namespace UOHD2D.Game
         {
             public string Name;
             public Color Color;
+
+            [Tooltip("The authentic UO hue number sent in the character creation packet (skin 1002-1058, hair 1102-1149, cloth 2-1001). The server clips out-of-range values.")]
+            public ushort UoHue;
         }
 
         [System.Serializable]
@@ -23,6 +26,9 @@ namespace UOHD2D.Game
         {
             public string Name;
             public Texture2D Texture;
+
+            [Tooltip("The UO hair item id sent at character creation (e.g. 0x203B short, 0x203C long). The server equips this as a real hair layer.")]
+            public ushort UoItemId;
         }
 
         [Tooltip("Skin tints multiplied over the base atlas. White = the atlas as authored.")]

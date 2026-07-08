@@ -119,14 +119,8 @@ namespace UOHD2D.Game
                 for (var i = 0; i < chars.Count; i++)
                     Debug.Log("[UOHD2D]   slot " + i + ": occupied=" + chars[i].Occupied + " name=" + chars[i].Name);
 
-                var firstOccupied = chars.FindIndex(c => c.Occupied);
-                if (firstOccupied >= 0)
-                {
-                    _charName = chars[firstOccupied].Name;
-                    _flow.SelectCharacter(firstOccupied);
-                }
-                else
-                    Debug.LogWarning("[UOHD2D] No occupied character slots - account has no characters yet");
+                // No auto-select: the list screen is also where new characters are created
+                // (classic UO), so the player picks a slot or makes one.
             };
 
             _flow.OnWorldEntered += () =>
@@ -270,16 +264,52 @@ namespace UOHD2D.Game
                     break;
 
                 case UiPhase.CharacterList:
+                {
+                    var freeSlot = -1;
+
                     for (var i = 0; i < _flow.Characters.Count; i++)
                     {
                         var c = _flow.Characters[i];
                         if (!c.Occupied)
+                        {
+                            if (freeSlot < 0)
+                                freeSlot = i;
                             continue;
+                        }
 
                         if (GUILayout.Button(c.Name))
+                        {
+                            _charName = c.Name;
                             _flow.SelectCharacter(i);
+                        }
+                    }
+
+                    // Classic UO character creation: the wizard IS the creation screen (name,
+                    // front-facing preview, appearance choices). Its callback sends the 0x00
+                    // packet and the server spawns the character wearing REAL clothes items
+                    // (shirt/pants/shoes in the chosen hues) plus a hair layer.
+                    if (freeSlot >= 0)
+                    {
+                        GUILayout.Space(8);
+
+                        if (GUILayout.Button("New Character"))
+                        {
+                            var slot = freeSlot;
+                            _wizard = CharacterCreationWizard.Open(gameObject, PlayerProfile, AppearanceOptions);
+                            _wizard.OnCreate = (app, name, profession) =>
+                            {
+                                app.ToUoCreation(AppearanceOptions,
+                                    out var skinHue, out var hairId, out var hairHue, out var shirtHue, out var pantsHue);
+
+                                _charName = name;
+                                _flow.CreateCharacter(name, slot, false, profession,
+                                    skinHue, hairId, hairHue, shirtHue, pantsHue);
+                                _status = "Creating " + name + "...";
+                            };
+                        }
                     }
                     break;
+                }
 
                 case UiPhase.InWorld:
                     GUILayout.Label("WASD to move  |  P: paperdoll  |  F3: art style");

@@ -125,6 +125,55 @@ namespace UOHD2D.Network
             Stage = LoginStage.AwaitingWorldEntry;
         }
 
+        // Classic UO character creation (opcode 0x00, 104 bytes): like the original client,
+        // appearance rides in the packet and the SERVER creates the character wearing REAL
+        // shirt/pants/shoes items in the chosen hues (ServUO CharacterCreation.NewCharacter).
+        // ServUO validation is strict: stats must each be 10-60 and sum to exactly 80, and the
+        // three distinct skills must total exactly 100 - invalid values silently degrade to
+        // 10/10/10, so we send a fixed known-good spread rather than exposing stat choice yet.
+        // profession: ServUO id 0-7 (0 none, 1 Warrior, 2 Magician, 3 Blacksmith, 4 Necromancer,
+        // 5 Paladin, 6 Samurai, 7 Ninja). Nonzero professions make the server set that class's
+        // stats/skills itself (ours are ignored) AND equip its starting armor as real items.
+        public void CreateCharacter(string name, int slot, bool female, int profession,
+            ushort skinHue, ushort hairItemId, ushort hairHue, ushort shirtHue, ushort pantsHue)
+        {
+            var w = new ByteWriter(104);
+            w.WriteByte(Opcode.CreateCharacter);
+            w.WriteInt32(unchecked((int)0xEDEDEDED));
+            w.WriteInt32(unchecked((int)0xFFFFFFFF));
+            w.WriteByte(0);                 // unk3
+            w.WriteAsciiFixed(name, 30);
+            w.WriteUInt16(0);               // pad
+            w.WriteInt32(0);                // client flags
+            w.WriteInt32(0); w.WriteInt32(0); // 8 unused bytes
+            w.WriteByte((byte)profession);
+            for (var i = 0; i < 15; i++) w.WriteByte(0);
+
+            // Post-7.0 encoding: 2 = human male, 3 = human female.
+            w.WriteByte((byte)(female ? 3 : 2));
+
+            w.WriteByte(45); w.WriteByte(25); w.WriteByte(10); // str/dex/int, sum must be 80
+
+            w.WriteByte(40); w.WriteByte(50); // Swordsmanship 50
+            w.WriteByte(27); w.WriteByte(30); // Tactics 30
+            w.WriteByte(17); w.WriteByte(20); // Healing 20 -> total exactly 100
+
+            w.WriteUInt16(skinHue);
+            w.WriteUInt16(hairItemId);
+            w.WriteUInt16(hairHue);
+            w.WriteUInt16(0);               // beard id
+            w.WriteUInt16(0);               // beard hue
+            w.WriteByte(0);                 // unused
+            w.WriteByte(3);                 // starting city: Britain (index 3 in ServUO's StartingCities) - the region our scene has loaded; index 0 = New Haven spawns outside it (black void)
+            w.WriteInt32(slot);
+            w.WriteInt32(0);                // client ip (logging only)
+            w.WriteUInt16(shirtHue);
+            w.WriteUInt16(pantsHue);
+            _conn.Send(w.ToArray());
+
+            Stage = LoginStage.AwaitingWorldEntry;
+        }
+
         public void SendMovement(byte direction, byte sequence)
         {
             var w = new ByteWriter(7);

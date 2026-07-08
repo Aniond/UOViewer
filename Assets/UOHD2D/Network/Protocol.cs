@@ -3,6 +3,7 @@ namespace UOHD2D.Network
     // Opcodes and fixed lengths per ServUO's Server/Network/PacketHandlers.cs and Packets.cs.
     public static class Opcode
     {
+        public const byte CreateCharacter = 0x00;
         public const byte MovementReq = 0x02;
         public const byte LoginConfirm = 0x1B;
         public const byte MovementRej = 0x21;

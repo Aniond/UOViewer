@@ -18,6 +18,22 @@ namespace UOHD2D.Game
         public CharacterProfile Profile;
         public CharacterAppearanceOptions Options;
 
+        // Creation mode: when set, the wizard also asks for a name + class and the confirm
+        // button hands (appearance, name, profession) to this callback - GameBootstrap sends
+        // the UO character creation packet from it. The server grants the class's starting
+        // armor/gear as real items. When null, the wizard just saves local appearance (Done).
+        public System.Action<CharacterAppearance, string, int> OnCreate;
+        public string CharacterName = "Adventurer";
+
+        // ServUO profession ids; 0 = no class, basic clothes only. 8 = Ranger, our custom
+        // profession block in ServUO's CharacterCreation.cs (green studded suite + bow).
+        private static readonly string[] Professions =
+            { "Adventurer", "Warrior", "Magician", "Blacksmith", "Necromancer", "Paladin", "Samurai", "Ninja", "Ranger" };
+        private int _profession;
+
+        // True while any wizard is on screen - gameplay input (PlayerAvatar) is locked out.
+        public static bool IsOpen { get; private set; }
+
         private CharacterAppearance _appearance;
         private CharacterRig _preview;
         private Camera _cam;
@@ -39,9 +55,20 @@ namespace UOHD2D.Game
             return wizard;
         }
 
+        private void OnEnable()
+        {
+            IsOpen = true;
+        }
+
         private void Start()
         {
             _appearance = CharacterAppearance.Load();
+
+            // Authentic UO: every new character starts wearing basic clothes (the server
+            // creates real shirt/pants items), so the wizard offers colors, not toggles.
+            _appearance.WearTunic = true;
+            _appearance.WearPants = true;
+
             CreatePreview();
             ApplyToPreview();
         }
@@ -112,6 +139,7 @@ namespace UOHD2D.Game
 
         private void OnDestroy()
         {
+            IsOpen = false;
             Cleanup();
         }
 
@@ -144,18 +172,62 @@ namespace UOHD2D.Game
                 return;
             }
 
-            const int w = 640;
-            const int h = 640;
+            // ClassicUO's creation layout: name up top, front-facing preview center stage,
+            // style/class pickers on the left, color swatches on the right, gender + confirm
+            // along the bottom.
+            const int w = 780;
+            const int h = 660;
             var rect = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
 
             GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label("Create your character");
 
             GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(OnCreate != null ? "Character Name" : "Customize Character");
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
 
-            // Live preview + rotate controls.
+            if (OnCreate != null)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                CharacterName = GUILayout.TextField(CharacterName, 16, GUILayout.Width(300));
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            var changed = false;
+
+            // LEFT: hair style + class.
+            GUILayout.BeginVertical(GUILayout.Width(190));
+            GUILayout.Label("Hair Style");
+
+            var hairCount = Options.HairStyles != null ? Options.HairStyles.Length : 0;
+            var hairIndex = _appearance.HairStyle + 1; // 0 = bald
+            if (CycleRow(ref hairIndex, hairCount + 1, i => i == 0 ? "Bald" : Options.HairStyles[i - 1].Name))
+            {
+                _appearance.HairStyle = hairIndex - 1;
+                changed = true;
+            }
+
+            if (OnCreate != null)
+            {
+                GUILayout.Space(14);
+                GUILayout.Label("Class");
+                CycleRow(ref _profession, Professions.Length, i => Professions[i]);
+                GUILayout.Label(ProfessionBlurb(_profession), GUI.skin.box);
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.FlexibleSpace();
+
+            // CENTER: front-facing live preview, rotate underneath.
             GUILayout.BeginVertical(GUILayout.Width(300));
-            var previewRect = GUILayoutUtility.GetRect(300, 500, GUILayout.Width(300), GUILayout.Height(500));
+            var previewRect = GUILayoutUtility.GetRect(300, 440, GUILayout.Width(300), GUILayout.Height(440));
             if (_rt != null)
                 GUI.DrawTexture(previewRect, _rt, ScaleMode.ScaleAndCrop);
 
@@ -167,63 +239,92 @@ namespace UOHD2D.Game
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
-            GUILayout.Space(12);
+            GUILayout.FlexibleSpace();
 
-            // Option cyclers.
-            GUILayout.BeginVertical();
-            var changed = false;
-
-            changed |= CycleRow("Skin", ref _appearance.SkinTone, NameCount(Options.SkinTones), i => Options.SkinTones[i].Name);
-
-            var hairCount = Options.HairStyles != null ? Options.HairStyles.Length : 0;
-            var hairIndex = _appearance.HairStyle + 1; // 0 = bald
-            if (CycleRow("Hair", ref hairIndex, hairCount + 1, i => i == 0 ? "Bald" : Options.HairStyles[i - 1].Name))
-            {
-                _appearance.HairStyle = hairIndex - 1;
-                changed = true;
-            }
+            // RIGHT: color swatches - click one to cycle to its next color.
+            GUILayout.BeginVertical(GUILayout.Width(190));
+            changed |= Swatch("Skin Tone", Options.SkinTones, ref _appearance.SkinTone);
+            changed |= Swatch("Shirt Color", Options.ClothHues, ref _appearance.TunicHue);
+            changed |= Swatch("Pants Color", Options.ClothHues, ref _appearance.PantsHue);
 
             if (_appearance.HairStyle >= 0)
-                changed |= CycleRow("Hair color", ref _appearance.HairColor, NameCount(Options.HairColors), i => Options.HairColors[i].Name);
+                changed |= Swatch("Hair Color", Options.HairColors, ref _appearance.HairColor);
 
-            GUILayout.Space(10);
+            GUILayout.EndVertical();
 
-            changed |= ToggleRow("Tunic", ref _appearance.WearTunic);
-            if (_appearance.WearTunic)
-                changed |= CycleRow("Tunic hue", ref _appearance.TunicHue, NameCount(Options.ClothHues), i => Options.ClothHues[i].Name);
-
-            changed |= ToggleRow("Pants", ref _appearance.WearPants);
-            if (_appearance.WearPants)
-                changed |= CycleRow("Pants hue", ref _appearance.PantsHue, NameCount(Options.ClothHues), i => Options.ClothHues[i].Name);
+            GUILayout.EndHorizontal();
 
             if (changed)
                 ApplyToPreview();
 
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("Done", GUILayout.Height(32)))
+            // Gender row - female body still pending, so male only for now.
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            GUILayout.Toggle(true, " Male", GUI.skin.button, GUILayout.Width(100));
+            GUI.enabled = false;
+            GUILayout.Toggle(false, " Female (soon)", GUI.skin.button, GUILayout.Width(130));
+            GUI.enabled = true;
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            if (OnCreate != null)
+            {
+                var name = CharacterName.Trim();
+                GUI.enabled = name.Length >= 2;
+
+                if (GUILayout.Button(name.Length >= 2 ? "Create \"" + name + "\"" : "Create (name too short)", GUILayout.Width(300), GUILayout.Height(34)))
+                {
+                    _appearance.Save();
+                    var callback = OnCreate;
+                    var prof = _profession;
+                    Close();
+                    callback(_appearance, name, prof);
+                }
+
+                GUI.enabled = true;
+            }
+            else if (GUILayout.Button("Done", GUILayout.Width(300), GUILayout.Height(34)))
             {
                 _appearance.Save();
                 Close();
             }
 
-            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+
             GUILayout.EndArea();
         }
 
-        private static int NameCount<T>(T[] array)
+        // What the server hands each ServUO profession at creation (real items).
+        private static string ProfessionBlurb(int prof)
         {
-            return array != null ? array.Length : 0;
+            switch (prof)
+            {
+                case 1: return "Leather armor,\nsword & shield";
+                case 2: return "Robe, staff\n& spellbook";
+                case 3: return "Smith hammer,\ntools & apron";
+                case 4: return "Dyed leather,\nbone helm & book";
+                case 5: return "Ringmail, helm\n& broadsword";
+                case 6: return "Hakama\n& bokuto";
+                case 7: return "Ninja garb\n& leafblade";
+                case 8: return "Green studded\nsuite, bow\n& 50 arrows";
+                default: return "Basic clothes\nin your colors";
+            }
         }
 
-        private static bool CycleRow(string label, ref int index, int count, System.Func<int, string> nameOf)
+        private static bool CycleRow(ref int index, int count, System.Func<int, string> nameOf)
         {
             if (count <= 0)
                 return false;
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(80));
 
             var changed = false;
             if (GUILayout.Button("<", GUILayout.Width(28)))
@@ -244,13 +345,43 @@ namespace UOHD2D.Game
             return changed;
         }
 
-        private static bool ToggleRow(string label, ref bool value)
+        private static GUIStyle _swatchStyle;
+
+        // A ClassicUO-style color block: shows the current color, click to cycle.
+        private static bool Swatch(string label, CharacterAppearanceOptions.NamedColor[] list, ref int index)
         {
-            var next = GUILayout.Toggle(value, " " + label);
-            if (next == value)
+            if (list == null || list.Length == 0)
                 return false;
 
-            value = next;
+            if (_swatchStyle == null)
+            {
+                _swatchStyle = new GUIStyle(GUI.skin.button);
+                _swatchStyle.normal.background = Texture2D.whiteTexture;
+                _swatchStyle.hover.background = Texture2D.whiteTexture;
+                _swatchStyle.active.background = Texture2D.whiteTexture;
+            }
+
+            GUILayout.Label(label);
+
+            index = Mathf.Clamp(index, 0, list.Length - 1);
+            var color = list[index].Color;
+
+            // Keep the color's name readable on any swatch.
+            var lum = 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+            var text = lum > 0.5f ? Color.black : Color.white;
+            _swatchStyle.normal.textColor = text;
+            _swatchStyle.hover.textColor = text;
+            _swatchStyle.active.textColor = text;
+
+            var prev = GUI.backgroundColor;
+            GUI.backgroundColor = color;
+            var clicked = GUILayout.Button(list[index].Name, _swatchStyle, GUILayout.Height(28));
+            GUI.backgroundColor = prev;
+
+            if (!clicked)
+                return false;
+
+            index = (index + 1) % list.Length;
             return true;
         }
     }
